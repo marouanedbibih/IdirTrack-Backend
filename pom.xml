@@ -10,10 +10,10 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.idirtrack</groupId>
-	<artifactId>stock-service</artifactId>
+	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>stock-service</name>
-	<description>Demo project for Spring Boot</description>
+	<name>backend</name>
+	<description>Backend project for IdirTrack project</description>
 	<url />
 	<licenses>
 		<license />
@@ -29,8 +29,7 @@
 		<url />
 	</scm>
 	<properties>
-		<java.version>22</java.version>
-		<spring-cloud.version>2023.0.2</spring-cloud.version>
+		<java.version>21</java.version>
 	</properties>
 
 
@@ -51,10 +50,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
+
 
 		<dependency>
 			<groupId>com.mysql</groupId>
@@ -112,19 +108,37 @@
 			<artifactId>mockito-junit-jupiter</artifactId>
 			<version>4.6.1</version>
 		</dependency>
-	</dependencies>
-	<dependencyManagement>
 
-		<dependencies>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-dependencies</artifactId>
-				<version>${spring-cloud.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
+		<!-- Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- JWT Dependencies -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>0.11.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>0.11.5</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>0.11.5</version>
+		</dependency>
+	</dependencies>
+
 
 	<build>
 		<plugins>

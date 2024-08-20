@@ -13,11 +13,10 @@ spring:
         ddl-auto: ${JPA_HIBERNATE_DDL_AUTO}
       database: ${JPA_DATABASE}
       database-platform: ${JPA_DATABASE_PLATFORM}
-    config:
-      import: optional:configserver:${CONFIG_SERVER_URL}
+  
+traccar:
+  api:
+    url: ${TRACCAR_API_URL}
 
 
-eureka:
-    client:
-        service-url:
-            defaultZone: ${EUREKA_SERVER_URL}
+
