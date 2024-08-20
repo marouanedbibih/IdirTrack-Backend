@@ -1,6 +1,8 @@
 package com.idirtrack.stock_service.sim;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,8 +21,8 @@ public class SimDTO {
     private String ccid;
     private String phone;
     private SimStatus status;
-    private Date createdAt;
-    private Date updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Long operatorId;
     private String operatorName;
 

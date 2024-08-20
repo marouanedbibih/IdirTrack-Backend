@@ -25,6 +25,33 @@ public interface SimRepository extends JpaRepository<Sim, Long>, JpaSpecificatio
             Pageable pageable);
 
     long countByStatus(SimStatus pending);
+
+    boolean existsByPhoneAndIdNot(String phone, Long id);
+
+    boolean existsByCcidAndIdNot(String ccid, Long id);
+
+    /**
+     * Search function for the Sim entity by phone, ccid, status, puk,pin,and
+     * operatorName
+     * 
+     * @param phone
+     * @param ccid
+     * @param status
+     * @param puk
+     * @param pin
+     * @param operatorName
+     */
+
+    @Query("SELECT s FROM Sim s WHERE " +
+            "(:term IS NULL OR " +
+            "s.phone LIKE CONCAT('%', :term, '%') OR " +
+            "s.ccid LIKE CONCAT('%', :term, '%') OR " +
+            "s.status = :term OR " +
+            "s.puk LIKE CONCAT('%', :term, '%') OR " +
+            "s.pin LIKE CONCAT('%', :term, '%') OR " +
+            "s.operator.name LIKE CONCAT('%', :term, '%'))")
+    Page<Sim> search(
+            @Param("term") String term,
+            Pageable pageable);
+
 }
-
-
