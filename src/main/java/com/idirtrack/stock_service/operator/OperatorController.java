@@ -20,7 +20,7 @@ import com.idirtrack.stock_service.utils.MyResponse;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/stock-api/operators")
+@RequestMapping("/api/operators")
 
 public class OperatorController {
 
