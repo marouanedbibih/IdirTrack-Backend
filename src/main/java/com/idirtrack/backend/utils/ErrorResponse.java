@@ -16,9 +16,7 @@ import lombok.NoArgsConstructor;
 public class ErrorResponse {
     // Errors
     private String message;
-    private FieldErrorDTO fieldError;
     private List<FieldErrorDTO> fieldErrors;
 
-    // Metadata
     private HttpStatus status;
 }

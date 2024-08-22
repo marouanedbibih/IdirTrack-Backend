@@ -1,5 +1,6 @@
 package com.idirtrack.backend.operator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,13 +213,15 @@ public class OperatorService {
          * @throws AlreadyExistException
          */
         public void ifOperatorExistThrowError(String name) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (operatorRepository.existsByName(name)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("name")
+                                        .message("This operator already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
                                         .status(HttpStatus.CONFLICT)
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("name")
-                                                        .message("Operator with this name already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
                                         .build());
                 }
         }
@@ -231,12 +234,14 @@ public class OperatorService {
          * @throws AlreadyExistException
          */
         public void isOperatorAlreadyExistExceptHerSelf(Long id, String name) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (operatorRepository.existsByNameAndIdNot(name, id)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("name")
+                                        .message("This operator already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("name")
-                                                        .message("This operator already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
                                         .status(HttpStatus.CONFLICT)
                                         .build());
                 }

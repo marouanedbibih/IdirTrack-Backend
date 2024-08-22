@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.idirtrack.backend.basics.BasicException;
-import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.FieldErrorDTO;
 
@@ -21,8 +20,7 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
         @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex)
-                        throws BasicException {
+        public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
                 BindingResult bindingResult = ex.getBindingResult();
 
                 // Capture only the first error for each field
@@ -41,14 +39,12 @@ public class GlobalExceptionHandler {
 
                 // Create the error response
                 ErrorResponse response = ErrorResponse.builder()
-                                .status(HttpStatus.BAD_REQUEST)
+                                .status(HttpStatus.BAD_REQUEST) 
                                 .fieldErrors(fieldErrors)
                                 .build();
 
-                // Throw BasicException with the constructed ErrorResponse
-                throw new BasicException(response);
+                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
-
 
         @ExceptionHandler(NotFoundException.class)
         public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex) {

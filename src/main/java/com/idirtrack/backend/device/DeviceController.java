@@ -7,6 +7,7 @@ import java.sql.Date;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
-@RequestMapping("/stock-api/device")
+@RequestMapping("/api/device")
 public class DeviceController {
 
     @Autowired
@@ -53,7 +54,7 @@ public class DeviceController {
      * @return ResponseEntity<BasicResponse>
      * @throws BasicException
      */
-
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter/")
     public ResponseEntity<BasicResponse> filterDevices(
             @RequestParam(value = "status", required = false) String status,
@@ -94,6 +95,7 @@ public class DeviceController {
      * 
      * @return ResponseEntity<BasicResponse>
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/quantity-of-status/")
     public ResponseEntity<BasicResponse> getQuantityOfStatus() {
         BasicResponse response = deviceService.countDevicesGroupByStatus();
@@ -109,6 +111,7 @@ public class DeviceController {
      * 
      * @return ResponseEntity<BasicResponse>
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/total/")
     public ResponseEntity<BasicResponse> getTotalDevices() {
         BasicResponse response = deviceService.countDevices();
@@ -126,6 +129,7 @@ public class DeviceController {
      * @param bindingResult
      * @return
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @PostMapping("/")
     public ResponseEntity<BasicResponse> createDeviceApi(
             @RequestBody @Valid DeviceRequest deviceRequest,
@@ -173,6 +177,7 @@ public class DeviceController {
      * @return ResponseEntity<BasicResponse>
      * @throws BasicException
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @PutMapping("/{id}/")
     public ResponseEntity<BasicResponse> updateDeviceApi(
             @PathVariable Long id,
@@ -219,6 +224,7 @@ public class DeviceController {
      * @return ResponseEntity<BasicResponse>
      * @throws BasicException
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @DeleteMapping("/{id}/")
     public ResponseEntity<BasicResponse> deleteDeviceApi(@PathVariable Long id) throws BasicException {
 
@@ -237,6 +243,7 @@ public class DeviceController {
      * @return
      * @throws BasicException
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/{id}/")
     public ResponseEntity<BasicResponse> getDeviceApi(@PathVariable Long id) throws BasicException {
 
@@ -256,6 +263,7 @@ public class DeviceController {
      * @return
      * @throws BasicException
      */
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/")
     public ResponseEntity<BasicResponse> getAllBoitiers(
             @RequestParam(defaultValue = "1") int page,
@@ -268,6 +276,7 @@ public class DeviceController {
     }
 
     // Search Devices API
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter")
     public ResponseEntity<BasicResponse> filterDevicesApi(@RequestParam(value = "imei", required = false) String imei,
             @RequestParam(value = "type", required = false) String deviceType,
@@ -307,7 +316,6 @@ public class DeviceController {
 
     // get list of devices by status non-installed
     @GetMapping("/not-installed/")
-
     public ResponseEntity<BasicResponse> getNonInstalledDevicesApi(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
         BasicResponse response = deviceService.getAllDevicesNonInstalled(page, size);
@@ -316,7 +324,6 @@ public class DeviceController {
 
     // search device non installed by imei
     @GetMapping("/not-installed/search/")
-
     public ResponseEntity<BasicResponse> searchNonInstalledDevicesApi(
             @RequestParam(value = "imei", required = false) String imei,
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -369,6 +376,7 @@ public class DeviceController {
     }
 
     // Search Device by IMEI API
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/search/")
     public ResponseEntity<BasicResponse> searchDeviceByImeiApi(
             @RequestParam(value = "search") String search,

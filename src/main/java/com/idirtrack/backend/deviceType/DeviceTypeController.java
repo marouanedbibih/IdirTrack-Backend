@@ -30,7 +30,7 @@ import com.idirtrack.backend.utils.ValidationUtils;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/stock-api/device/type")
+@RequestMapping("/api/device/type")
 public class DeviceTypeController {
 
     @Autowired

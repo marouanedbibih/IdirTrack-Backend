@@ -1,14 +1,15 @@
 package com.idirtrack.backend.sim;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,42 @@ public class SimService {
         private final SimStockRepository simStockRepository;
         private final StockRepository stockRepository;
         private final OperatorRepository operatorRepository;
+
+        /**
+         * Service: Get total SIMs for each status
+         * @return MyResponse
+         */
+        public MyResponse getTotalSimsByStatus() {
+                long totalNonInstalled = simRepository.countByStatus(SimStatus.NON_INSTALLED);
+                long totalInstalled = simRepository.countByStatus(SimStatus.INSTALLED);
+                long totalInPending = simRepository.countByStatus(SimStatus.PENDING);
+                long totalLost = simRepository.countByStatus(SimStatus.LOST);
+
+                Map<String, Long> data = new HashMap<>();
+                data.put("nonInstalled", totalNonInstalled);
+                data.put("installed", totalInstalled);
+                data.put("lost", totalLost);
+                data.put("pending", totalInPending);
+
+                return MyResponse.builder()
+                                .data(data)
+                                .status(HttpStatus.OK)
+                                .build();
+        }
+
+
+        /**
+         * Service: Get Total SIMs
+         * @return MyResponse
+         */
+
+        public MyResponse getTotalSims() {
+                long totalSims = simRepository.count();
+                return MyResponse.builder()
+                                .data(totalSims)
+                                .status(HttpStatus.OK)
+                                .build();
+        }
 
         /**
          * Service: Create a new sim
@@ -158,7 +195,7 @@ public class SimService {
          */
         public MyResponse getAllSimsWithPagination(int page, int size) {
                 // Create a pageable object
-                Pageable pageable = PageRequest.of(page - 1, size);
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
                 // Get all the sims with pagination
                 Page<Sim> simPage = simRepository.findAll(pageable);
                 // Check if the page is empty
@@ -187,10 +224,17 @@ public class SimService {
 
         }
 
+        /**
+         * Service: Search SIMs
+         * 
+         * @param query - search query
+         * @param page  - page number
+         * @param size  - page size
+         */
         public MyResponse searchSIMs(String query, int page, int size) {
 
                 // Create a pageable object
-                Pageable pageable = PageRequest.of(page - 1, size);
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
                 // Search by any field
                 Page<Sim> simPage = simRepository.search(query, pageable);
                 // Check if the page is empty
@@ -216,7 +260,7 @@ public class SimService {
                                         .status(HttpStatus.OK)
                                         .build();
                 }
-                
+
         }
 
         /**
@@ -247,6 +291,7 @@ public class SimService {
                 return MyResponse.builder()
                                 .data(simDTO)
                                 .message("Sim update successfully")
+                                .status(HttpStatus.OK)
                                 .build();
 
         }
@@ -417,6 +462,46 @@ public class SimService {
         }
 
         /**
+         * Service: Filter SIMs by status,operator
+         * 
+         * @param status
+         * @param operatorId
+         * @throws AlreadyExistException
+         */
+
+        public MyResponse filterSims(String status, Long operatorId, int page, int size) {
+                // Find the operator
+                Operator operator = operatorRepository.findById(operatorId).orElse(null);
+                // Create a pageable object
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+                // Filter the sims
+                Page<Sim> simPage = simRepository.filterSim(SimStatus.valueOf(status), operator, pageable);
+                // Check if the page is empty
+                if (simPage.isEmpty()) {
+                        return MyResponse.builder()
+                                        .message("No SIMs found")
+                                        .status(HttpStatus.NOT_FOUND)
+                                        .build();
+                }
+                // Else, build the response
+                else {
+                        List<SimDTO> simDTOs = simPage.getContent().stream().map(sim -> this.transformEntityToDTO(sim))
+                                        .collect(Collectors.toList());
+                        // Build the Metadata
+                        Map<String, Object> metadata = new HashMap<>();
+                        metadata.put("currentPage", simPage.getNumber() + 1);
+                        metadata.put("totalPages", simPage.getTotalPages());
+                        metadata.put("size", simPage.getSize());
+                        // Return the response
+                        return MyResponse.builder()
+                                        .data(simDTOs)
+                                        .metadata(metadata)
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+        }
+
+        /**
          * Utils: Check if the phone number already exists except the current sim
          * 
          * @param phone
@@ -426,12 +511,16 @@ public class SimService {
          */
 
         public void ifPhoneNumberAlreadyExistExceptCurrentSim(String phone, Long id) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
+
                 if (simRepository.existsByPhoneAndIdNot(phone, id)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("phone")
+                                        .message("Phone number already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("phone")
-                                                        .message("Phone number already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
+                                        .status(HttpStatus.CONFLICT)
                                         .build());
                 }
         }
@@ -446,12 +535,15 @@ public class SimService {
          */
 
         public void ifCCIDAlreadyExistExceptCurrentSim(String ccid, Long id) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (simRepository.existsByCcidAndIdNot(ccid, id)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("ccid")
+                                        .message("CCID already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("ccid")
-                                                        .message("CCID already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
+                                        .status(HttpStatus.CONFLICT)
                                         .build());
                 }
         }
@@ -463,12 +555,15 @@ public class SimService {
          * @throws AlreadyExistException
          */
         public void ifPhoneNumberAlreadyExist(String phone) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (simRepository.existsByPhone(phone)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("phone")
+                                        .message("Phone number already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("phone")
-                                                        .message("Phone number already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
+                                        .status(HttpStatus.CONFLICT)
                                         .build());
                 }
 
@@ -481,12 +576,15 @@ public class SimService {
          * @throws AlreadyExistException
          */
         public void ifCCIDAlreadyExist(String ccid) throws AlreadyExistException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (simRepository.existsByCcid(ccid)) {
+                        fieldErrors.add(FieldErrorDTO.builder()
+                                        .field("ccid")
+                                        .message("CCID already exists")
+                                        .build());
                         throw new AlreadyExistException(ErrorResponse.builder()
-                                        .fieldError(FieldErrorDTO.builder()
-                                                        .field("ccid")
-                                                        .message("CCID already exists")
-                                                        .build())
+                                        .fieldErrors(fieldErrors)
+                                        .status(HttpStatus.CONFLICT)
                                         .build());
                 }
         }
@@ -499,13 +597,18 @@ public class SimService {
          * @throws NotFoundException
          */
         public Operator findOperatorById(Long id) throws NotFoundException {
+                List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 return operatorRepository.findById(id).orElseThrow(
-                                () -> new NotFoundException(ErrorResponse.builder()
-                                                .fieldError(FieldErrorDTO.builder()
-                                                                .field("operatorId")
-                                                                .message("Operator not found")
-                                                                .build())
-                                                .build()));
+                                () -> {
+                                        fieldErrors.add(FieldErrorDTO.builder()
+                                                        .field("operatorId")
+                                                        .message("Operator not found with id: " + id)
+                                                        .build());
+                                        return new NotFoundException(ErrorResponse.builder()
+                                                        .fieldErrors(fieldErrors)
+                                                        .status(HttpStatus.NOT_FOUND)
+                                                        .build());
+                                });
         }
 
         /**
@@ -534,6 +637,7 @@ public class SimService {
                 return simRepository.findById(id).orElseThrow(
                                 () -> new NotFoundException(ErrorResponse.builder()
                                                 .message("Sim not found with id: " + id)
+                                                .status(HttpStatus.NOT_FOUND)
                                                 .build()));
         }
 
