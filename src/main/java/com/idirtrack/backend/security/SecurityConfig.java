@@ -62,6 +62,7 @@ public class SecurityConfig {
                      * Endpoints for manager APIs, only users with the role ADMIN can access this
                      */
                     .requestMatchers("/user-api/manager/**").hasAuthority("ADMIN")
+                    .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "MANAGER")
 
                     .anyRequest().authenticated();
         });

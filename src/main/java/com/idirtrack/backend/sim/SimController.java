@@ -1,7 +1,7 @@
 package com.idirtrack.backend.sim;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.integration.IntegrationProperties.Error;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -21,16 +21,59 @@ import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.sim.https.SimRequest;
+import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
+import com.idirtrack.backend.utils.RequestValidation;
 
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/stock-api/sim")
+@RequestMapping("/api/sim")
 public class SimController {
 
     @Autowired
     private SimService simService;
+
+    /**
+     * Endpoint API to get total number of SIMs by status
+     * @return
+     */
+
+    @GetMapping("/statistiques/total-sims-by-status/")
+    public ResponseEntity<MyResponse> countSimsByStatus() {
+        MyResponse response = simService.getTotalSimsByStatus();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    /**
+     * Endpoint API to get total number of SIMs
+     * 
+     * @return ResponseEntity<MyResponse>
+     */
+    @GetMapping("/statistiques/total-sims/")
+    public ResponseEntity<MyResponse> countSims() {
+        MyResponse response = simService.getTotalSims();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    /**
+     * Endpoint API to filter SIMs by status and operator
+     * 
+     * @param page
+     * @param size
+     * @param status
+     * @param operatorId
+     * @return ResponseEntity<?>
+     */
+    @GetMapping("/filter/")
+    public ResponseEntity<?> filterSim(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long operatorId) {
+        MyResponse response = simService.filterSims(status, operatorId, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 
     /**
      * Endpoint API to get List of SIMs with pagination
@@ -69,10 +112,23 @@ public class SimController {
      * @throws BasicException
      */
     @PostMapping("/")
-    public ResponseEntity<MyResponse> createSim(@Valid @RequestBody SimRequest request,
-            BindingResult bindingResult) throws AlreadyExistException, NotFoundException {
-        MyResponse response = simService.createSim(request);
-        return ResponseEntity.status(response.getStatus()).body(response);
+    public ResponseEntity<?> createSim(
+            @Valid @RequestBody SimRequest request,
+            BindingResult bindingResult)
+            throws AlreadyExistException, NotFoundException {
+
+        if (bindingResult.hasErrors()) {
+            return RequestValidation.handleValidationErrors(bindingResult);
+        } else {
+            try {
+                MyResponse response = simService.createSim(request);
+                return ResponseEntity.status(response.getStatus()).body(response);
+            } catch (AlreadyExistException ex) {
+                return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
+            } catch (NotFoundException ex) {
+                return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
+            }
+        }
 
     }
 
@@ -84,13 +140,23 @@ public class SimController {
      * @throws NotFoundException
      */
     @PutMapping("/{id}/")
-    public ResponseEntity<MyResponse> updateSim(
+    public ResponseEntity<?> updateSim(
             @PathVariable Long id,
-            @Valid @RequestBody SimRequest request)
+            @Valid @RequestBody SimRequest request,
+            BindingResult bindingResult)
             throws NotFoundException, AlreadyExistException {
-
-        MyResponse response = simService.updateSim(id, request);
-        return ResponseEntity.status(response.getStatus()).body(response);
+        if (bindingResult.hasErrors()) {
+            return RequestValidation.handleValidationErrors(bindingResult);
+        } else {
+            try {
+                MyResponse response = simService.updateSim(id, request);
+                return ResponseEntity.status(response.getStatus()).body(response);
+            } catch (AlreadyExistException ex) {
+                return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
+            } catch (NotFoundException ex) {
+                return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
+            }
+        }
 
     }
 
@@ -102,9 +168,13 @@ public class SimController {
      * @throws NotFoundException
      */
     @DeleteMapping("/{id}/")
-    public ResponseEntity<MyResponse> deleteSim(@PathVariable Long id) throws NotFoundException {
-        MyResponse response = simService.deleteSim(id);
-        return ResponseEntity.status(response.getStatus()).body(response);
+    public ResponseEntity<?> deleteSim(@PathVariable Long id) throws NotFoundException {
+        try {
+            MyResponse response = simService.deleteSim(id);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        }
     }
 
     /**
@@ -155,7 +225,7 @@ public class SimController {
         }
     }
 
-    @GetMapping("/search")
+    @GetMapping("/search/")
     public ResponseEntity<MyResponse> searchSIMs(
             @RequestParam(value = "term", required = true) String term,
             @RequestParam(defaultValue = "1") int page,

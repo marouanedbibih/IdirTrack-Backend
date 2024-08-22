@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.idirtrack.backend.sim.Sim;
 import com.idirtrack.backend.utils.BasicEntity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
@@ -19,7 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@EqualsAndHashCode(callSuper=false)
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @SuperBuilder
 @NoArgsConstructor
@@ -30,7 +31,7 @@ public class Operator extends BasicEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @OneToMany(mappedBy = "operator")
+    @OneToMany(mappedBy = "operator", cascade = CascadeType.ALL)
     @JsonBackReference
     private List<Sim> sims;
 }
