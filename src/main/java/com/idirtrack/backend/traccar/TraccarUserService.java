@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
+import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.user.UserDTO;
 import com.idirtrack.backend.user.UserRole;
 
@@ -24,7 +25,8 @@ public class TraccarUserService {
 
     private final RestTemplate restTemplate;
     private final TracCarUser tracCarUser;
-
+    private final TracCarSessionService tracCarSessionService;
+    private final JwtUtils jwtUtils;
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(TraccarUserService.class);
 
@@ -60,7 +62,7 @@ public class TraccarUserService {
 
     }
 
-    public Map<String, Object> createUser(UserDTO user, UserRole role) throws BasicException {
+    public Map<String, Object> createUser(UserDTO user, UserRole role,String jwtToken) throws BasicException {
         String url = "http://152.228.219.146:8082/api/users";
 
         // Create the request body from TracCarUser
@@ -71,15 +73,18 @@ public class TraccarUserService {
         } else if (role == UserRole.MANAGER) {
             tracCarUser = TracCarUser.buildManagerUser(user);
         } else if (role == UserRole.CLIENT) {
-            // TracCarUser user = TracCarUser.buildUser(user);
+             tracCarUser = TracCarUser.buildClient(user);
         }
 
         // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        // HttpHeaders headers = new HttpHeaders();
+        // headers.setContentType(MediaType.APPLICATION_JSON);
+
+         // Set headers using the session ID from the JWT
+         HttpHeaders headers = createHeadersFromToken(jwtToken);
 
         // add basic auth with username and password idirtech idirtech1
-        headers.setBasicAuth("idirtech", "idirtech1");
+        
 
         // Create the HttpEntity
         HttpEntity<TracCarUser> entity = new HttpEntity<>(tracCarUser, headers);
@@ -164,4 +169,22 @@ public class TraccarUserService {
         }
     }
 
+
+    private HttpHeaders createHeadersFromToken(String jwtToken) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Extract the session ID from the JWT token
+        String sessionId = jwtUtils.extractSession(jwtToken);
+
+        // Check if the session ID is not null
+        if (sessionId != null) {
+            // Add the session ID as a cookie in the headers
+            headers.add(HttpHeaders.COOKIE, "JSESSIONID=" + sessionId);
+        } else {
+            throw new IllegalArgumentException("Session ID not found in the JWT token.");
+        }
+
+        return headers;
+    }
 }

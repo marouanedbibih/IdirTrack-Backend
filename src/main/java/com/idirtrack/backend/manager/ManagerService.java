@@ -127,7 +127,7 @@ public class ManagerService {
          */
 
         @Transactional
-        public BasicResponse createManager(ManagerRequest managerRequest) throws BasicException {
+        public BasicResponse createManager(ManagerRequest managerRequest,String token) throws BasicException {
                 // Check if the user exists
                 userService.isUsernameTaken(managerRequest.getUsername());
                 userService.isEmailTaken(managerRequest.getEmail());
@@ -144,7 +144,7 @@ public class ManagerService {
                                 .build();
 
                 // Save the user in Traccar
-                Map<String, Object> managerTracCar = traccarUserService.createUser(userDTO, UserRole.MANAGER);
+                Map<String, Object> managerTracCar = traccarUserService.createUser(userDTO, UserRole.MANAGER, token);
                 if (managerTracCar != null) {
                         // Get ID from response
                         Long id = Long.parseLong(managerTracCar.get("id").toString());

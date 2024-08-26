@@ -1,22 +1,26 @@
 server:
-    port: ${SPRING_APP_PORT}
+  port: 8080
+
 spring:
-    application:
-      name: ${SPRING_APPLICATION_NAME}
-    datasource:
-      driver-class-name: ${DATASOURCE_DRIVER_CLASS_NAME}
-      url: ${DATASOURCE_URL}
-      username: ${DATASOURCE_USERNAME}
-      password: ${DATASOURCE_PASSWORD}  
-    jpa:
-      hibernate:
-        ddl-auto: ${JPA_HIBERNATE_DDL_AUTO}
-      database: ${JPA_DATABASE}
-      database-platform: ${JPA_DATABASE_PLATFORM}
-  
+  application:
+    name: backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://db-instance-idirtrack.cd0ikwgi62ui.eu-west-3.rds.amazonaws.com:3306/idirtrack?createDatabaseIfNotExist=true&useSSL=false
+    username: admin
+    password: admin1234
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
 traccar:
   api:
-    url: ${TRACCAR_API_URL}
+    url: http://152.228.219.146:8082
 
-
-
+logging:
+  level:
+    org.springframework: DEBUG
+    hibernate: DEBUG
+    security: DEBUG
+    com.idirtrack: DEBUG

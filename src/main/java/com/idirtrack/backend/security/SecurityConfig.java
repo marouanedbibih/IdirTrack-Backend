@@ -53,7 +53,7 @@ public class SecurityConfig {
             // request.anyRequest()).authenticated();
             request
                     // Public endpoints
-                    .requestMatchers("/user-api/auth/login").permitAll()
+                    .requestMatchers("/api/auth/login").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                     // Endpoints for ADMIN
