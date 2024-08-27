@@ -7,6 +7,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.idirtrack.backend.admin.Admin;
+import com.idirtrack.backend.client.Client;
 import com.idirtrack.backend.manager.Manager;
 import com.idirtrack.backend.utils.BasicEntity;
 
@@ -59,6 +60,11 @@ public class User extends BasicEntity implements UserDetails {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude
     private Manager manager;
+
+    // Client
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    private Client client;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

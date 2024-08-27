@@ -23,7 +23,6 @@ import com.idirtrack.backend.user.User;
 import com.idirtrack.backend.user.UserDTO;
 import com.idirtrack.backend.user.UserRole;
 import com.idirtrack.backend.user.UserService;
-import com.idirtrack.backend.utils.BasicError;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -105,6 +104,7 @@ public class ManagerService {
 
                         // Return a success response
                         return BasicResponse.builder()
+                                        .content(updatedUser)
                                         .message("Manager updated successfully")
                                         .status(HttpStatus.OK)
                                         .build();

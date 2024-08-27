@@ -1,6 +1,7 @@
 package com.idirtrack.backend.sim;
 
 
+import com.idirtrack.backend.boitier.Boitier;
 import com.idirtrack.backend.operator.Operator;
 import com.idirtrack.backend.utils.BasicEntity;
 
@@ -11,6 +12,7 @@ import jakarta.persistence.Enumerated;
 
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 
@@ -48,4 +50,16 @@ public class Sim extends BasicEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private SimStatus status;
+
+    @OneToOne(mappedBy = "sim")
+    private Boitier boitier;
+
+    // Equals and HashCode
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Sim sim = (Sim) o;
+        return id.equals(sim.id);
+    }
 }

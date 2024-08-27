@@ -16,6 +16,7 @@ import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.device.https.DeviceRequest;
 import com.idirtrack.backend.device.https.DeviceUpdateRequest;
+import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.utils.ValidationUtils;
 
 import jakarta.validation.Valid;
@@ -36,24 +37,7 @@ public class DeviceController {
     @Autowired
     private DeviceService deviceService;
 
-    /**
-     * FILTER DEVICES API
-     * 
-     * @apiNote
-     *          This endpoint is used to get the list of devices by status, device
-     *          type, created from and created to
-     *          GET
-     *          /stock-api/device/filter/?status=installed&type=1&createdFrom=2021-01-01&createdTo=2021-12-31&page=1&size=5
-     * 
-     * @param status
-     * @param deviceTypeId
-     * @param createdFrom
-     * @param createdTo
-     * @param page
-     * @param size
-     * @return ResponseEntity<BasicResponse>
-     * @throws BasicException
-     */
+    // Filter Devices API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter/")
     public ResponseEntity<BasicResponse> filterDevices(
@@ -66,7 +50,8 @@ public class DeviceController {
 
         // Try to filter the devices
         try {
-            BasicResponse response = deviceService.filterDevices(status, deviceTypeId, createdFrom, createdTo, page, size);
+            BasicResponse response = deviceService.filterDevices(status, deviceTypeId, createdFrom, createdTo, page,
+                    size);
             return ResponseEntity.status(response.getStatus()).body(response);
         }
         // Catch any BasicException and return the response
@@ -85,16 +70,7 @@ public class DeviceController {
         }
     }
 
-    /**
-     * Endpoint to get total number of devices and group by status
-     * 
-     * @apiNote
-     *          This endpoint is used to get the total number of devices and group
-     *          by status
-     *          GET /stock-api/device/quantity-of-status/
-     * 
-     * @return ResponseEntity<BasicResponse>
-     */
+    // Count Devices for each status API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/quantity-of-status/")
     public ResponseEntity<BasicResponse> getQuantityOfStatus() {
@@ -102,15 +78,7 @@ public class DeviceController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Endpoint to get total number of devices
-     * 
-     * @apiNote
-     *          This endpoint is used to get the total number of devices
-     *          GET /stock-api/device/total/
-     * 
-     * @return ResponseEntity<BasicResponse>
-     */
+    // Count total of devices API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/total/")
     public ResponseEntity<BasicResponse> getTotalDevices() {
@@ -118,17 +86,7 @@ public class DeviceController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Endpoint to create device
-     * 
-     * @apiNote
-     *          This endpoint is used to create a new device
-     *          POST /stock-api/device/
-     * 
-     * @param deviceRequest
-     * @param bindingResult
-     * @return
-     */
+    // Create Device API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @PostMapping("/")
     public ResponseEntity<BasicResponse> createDeviceApi(
@@ -165,18 +123,7 @@ public class DeviceController {
 
     }
 
-    /**
-     * Endpoint to update device
-     * 
-     * @apiNote
-     *          This endpoint is used to update the device information
-     *          PUT /stock-api/device/{id}/
-     * @param id
-     * @param deviceUpdateRequest
-     * @param bindingResult
-     * @return ResponseEntity<BasicResponse>
-     * @throws BasicException
-     */
+    // Update Device API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @PutMapping("/{id}/")
     public ResponseEntity<BasicResponse> updateDeviceApi(
@@ -214,16 +161,7 @@ public class DeviceController {
 
     }
 
-    /**
-     * Endpoint to delete device
-     * 
-     * @apiNote
-     *          This endpoint is used to delete the device by id
-     *          DELETE /stock-api/device/{id}/
-     * @param id
-     * @return ResponseEntity<BasicResponse>
-     * @throws BasicException
-     */
+    // Delete Device API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @DeleteMapping("/{id}/")
     public ResponseEntity<BasicResponse> deleteDeviceApi(@PathVariable Long id) throws BasicException {
@@ -233,16 +171,7 @@ public class DeviceController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Endpoint to get device by id
-     * 
-     * @apiNote
-     *          This endpoint is used to get the device by id
-     *          GET /stock-api/device/{id}/
-     * @param id
-     * @return
-     * @throws BasicException
-     */
+    // Get Device by ID API
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/{id}/")
     public ResponseEntity<BasicResponse> getDeviceApi(@PathVariable Long id) throws BasicException {
@@ -252,17 +181,7 @@ public class DeviceController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Endpoint to get all devices
-     * 
-     * @apiNote
-     *          This endpoint is used to get all devices with pagination
-     *          GET /stock-api/device/?page=1&size=5
-     * @param page
-     * @param size
-     * @return
-     * @throws BasicException
-     */
+    // API to get list of all devices with pagination
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/")
     public ResponseEntity<BasicResponse> getAllBoitiers(
@@ -275,7 +194,7 @@ public class DeviceController {
 
     }
 
-    // Search Devices API
+    // API to search devices by any field
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter")
     public ResponseEntity<BasicResponse> filterDevicesApi(@RequestParam(value = "imei", required = false) String imei,
@@ -309,70 +228,30 @@ public class DeviceController {
 
     // Count Devices by Status API
     @GetMapping("/count-non-install/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<BasicResponse> countNonInstallDevicesApi() {
         BasicResponse response = deviceService.countDevicesNonInstalled();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    // get list of devices by status non-installed
-    @GetMapping("/not-installed/")
-    public ResponseEntity<BasicResponse> getNonInstalledDevicesApi(@RequestParam(defaultValue = "1") int page,
+    // Get list of devices not installed API
+    @GetMapping("/non-installed/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    public ResponseEntity<?> getNonInstalledDevicesApi(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
-        BasicResponse response = deviceService.getAllDevicesNonInstalled(page, size);
+        MyResponse response = deviceService.getAllDevicesNonInstalled(page, size);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    // search device non installed by imei
-    @GetMapping("/not-installed/search/")
-    public ResponseEntity<BasicResponse> searchNonInstalledDevicesApi(
-            @RequestParam(value = "imei", required = false) String imei,
+    // API to search non-installed devices
+    @GetMapping("/non-installed/search/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    public ResponseEntity<?> searchNonInstalledDevicesApi(
+            @RequestParam(value = "query", required = false) String query,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "5") int size) {
-        BasicResponse response = deviceService.searchNonInstalledDevices(imei, page, size);
+        MyResponse response = deviceService.searchNonInstalledDevices(query, page, size);
         return ResponseEntity.status(response.getStatus()).body(response);
-    }
-
-    // Change Device Status to Installed API
-    @PutMapping("/status/installed/{id}/")
-    public ResponseEntity<BasicResponse> changeDeviceStatusToInstalledApi(@PathVariable Long id) {
-        try {
-            BasicResponse response = deviceService.changeDeviceStatusInstalled(id);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-    }
-
-    /**
-     * Endpoint to chnage the status of device
-     * 
-     * @param id
-     * @param status
-     * @return ResponseEntity<BasicResponse>
-     */
-
-    @PutMapping("/status/")
-    public ResponseEntity<BasicResponse> changeDeviceStatusApi(@RequestParam Long id, @RequestParam String status) {
-        try {
-            BasicResponse response = deviceService.changeDeviceStatus(id, status);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
     }
 
     // Search Device by IMEI API

@@ -8,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.FieldErrorDTO;
 

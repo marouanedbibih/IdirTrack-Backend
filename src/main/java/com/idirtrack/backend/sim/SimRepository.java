@@ -1,5 +1,7 @@
 package com.idirtrack.backend.sim;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -53,6 +55,10 @@ public interface SimRepository extends JpaRepository<Sim, Long>, JpaSpecificatio
                         @Param("status") SimStatus status,
                         @Param("operator") Operator operator,
                         Pageable pageable);
+
+        List<Sim> findAllByStatus(SimStatus nonInstalled);
+
+        // List<Sim> findAllByStatusAndPhoneContainingOrCcidContaining(SimStatus nonInstalled, String query);
 
 
 }

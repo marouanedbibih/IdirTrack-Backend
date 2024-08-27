@@ -7,8 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Date;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.idirtrack.backend.boitier.Boitier;
 import com.idirtrack.backend.deviceType.DeviceType;
 
 @Entity
@@ -44,11 +46,30 @@ public class Device {
     @JsonBackReference // to avoid infinite loop
     private DeviceType deviceType;
 
+    @OneToOne(mappedBy = "device")
+    private Boitier boitier;
+
     public void setDeviceType(DeviceType deviceType) {
         this.deviceType = deviceType;
     }
 
     public DeviceType getDeviceType() {
         return deviceType;
+    }
+
+    // Equals and HashCode
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Device))
+            return false;
+        Device device = (Device) o;
+        return getId().equals(device.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }
