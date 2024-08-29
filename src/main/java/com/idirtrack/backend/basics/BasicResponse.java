@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.idirtrack.backend.utils.Error;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -24,4 +26,7 @@ public class BasicResponse {
 
     private BasicError error;
     private List<BasicError> errors;
+
+    private List<Error> errorsList;
+    private Error errorObject;
 }

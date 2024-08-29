@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
-import com.idirtrack.backend.basics.MetaData;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.operator.Operator;
@@ -38,9 +37,10 @@ public class SimService {
         private final SimStockRepository simStockRepository;
         private final StockRepository stockRepository;
         private final OperatorRepository operatorRepository;
-
+        
         /**
          * Service: Get total SIMs for each status
+         * 
          * @return MyResponse
          */
         public MyResponse getTotalSimsByStatus() {
@@ -61,9 +61,9 @@ public class SimService {
                                 .build();
         }
 
-
         /**
          * Service: Get Total SIMs
+         * 
          * @return MyResponse
          */
 
@@ -327,138 +327,106 @@ public class SimService {
                                 .build();
         }
 
-        public BasicResponse getAllNonInstalledSims(int page, int size) throws BasicException {
+        /**
+         * Service: Get all non-installed SIMs
+         * @param page
+         * @param size
+         * @return MyResponse
+         * @throws 
+         */
+        public MyResponse getAllNonInstalledSims(int page, int size){
+
+                // Create a pageable object
                 Pageable pageRequest = PageRequest.of(page - 1, size);
+                // Get all non-installed sims
                 Page<Sim> simPage = simRepository.findAllByStatus(SimStatus.NON_INSTALLED, pageRequest);
 
-                List<SimBoitierDTO> simDTOs = simPage.getContent().stream()
-                                .map(sim -> SimBoitierDTO.builder()
-                                                .simMicroserviceId(sim.getId())
-                                                .phone(sim.getPhone())
-                                                .ccid(sim.getCcid())
-                                                .operatorName(sim.getOperator().getName())
-                                                .build())
-                                .collect(Collectors.toList());
-
-                MetaData metaData = MetaData.builder()
-                                .currentPage(simPage.getNumber() + 1)
-                                .totalPages(simPage.getTotalPages())
-                                .size(simPage.getSize())
-                                .build();
-
-                return BasicResponse.builder()
-                                .content(simDTOs)
-                                .message("SIMs retrieved successfully")
-                                .messageType(MessageType.SUCCESS)
-                                .status(HttpStatus.OK)
-                                .metadata(metaData)
-                                .build();
-        }
-
-        public BasicResponse searchNonInstalledSims(String query, int page, int size) throws BasicException {
-                Pageable pageable = PageRequest.of(page - 1, size);
-                Page<Sim> simPage = simRepository.findAllByStatusAndPhoneContainingOrCcidContaining(
-                                SimStatus.NON_INSTALLED, query, pageable);
-
+                // Check if the page is empty
                 if (simPage.isEmpty()) {
-                        throw new BasicException(BasicResponse.builder()
-                                        .content(null)
+                        return MyResponse.builder()
                                         .message("No non-installed SIMs found")
-                                        .messageType(MessageType.ERROR)
                                         .status(HttpStatus.NOT_FOUND)
-                                        .build());
+                                        .build();
+                }
+                // Else retrun the response
+                else {
+                        List<SimDTO> simDTOs = simPage.getContent().stream().map(sim -> this.transformEntityToDTO(sim))
+                                        .collect(Collectors.toList());
+                        // Build the Metadata
+                        Map<String, Object> metadata = new HashMap<>();
+                        metadata.put("currentPage", simPage.getNumber() + 1);
+                        metadata.put("totalPages", simPage.getTotalPages());
+                        metadata.put("size", simPage.getSize());
+                        // Return the response
+                        return MyResponse.builder()
+                                        .data(simDTOs)
+                                        .metadata(metadata)
+                                        .status(HttpStatus.OK)
+                                        .build();
                 }
 
-                List<SimBoitierDTO> simDTOs = simPage.getContent().stream()
-                                .map(sim -> SimBoitierDTO.builder()
-                                                .simMicroserviceId(sim.getId())
-                                                .phone(sim.getPhone())
-                                                .ccid(sim.getCcid())
-                                                .operatorName(sim.getOperator().getName())
-                                                .build())
-                                .collect(Collectors.toList());
-
-                MetaData metadata = MetaData.builder()
-                                .currentPage(simPage.getNumber() + 1)
-                                .totalPages(simPage.getTotalPages())
-                                .size(simPage.getSize())
-                                .build();
-
-                return BasicResponse.builder()
-                                .content(simDTOs)
-                                .message("SIMs retrieved successfully")
-                                .messageType(MessageType.SUCCESS)
-                                .status(HttpStatus.OK)
-                                .metadata(metadata)
-                                .build();
-        }
-
-        public BasicResponse changeSimStatusInstalled(Long id) throws BasicException {
-                Sim sim = simRepository.findById(id).orElse(null);
-                if (sim == null) {
-                        throw new BasicException(BasicResponse.builder()
-                                        .content(null)
-                                        .message("Sim not found")
-                                        .messageType(MessageType.ERROR)
-                                        .status(HttpStatus.NOT_FOUND)
-                                        .build());
-                }
-
-                sim.setStatus(SimStatus.INSTALLED);
-                sim = simRepository.save(sim);
-
-                return BasicResponse.builder()
-                                .content(sim)
-                                .message("Device status changed to installed successfully")
-                                .messageType(MessageType.SUCCESS)
-                                .status(HttpStatus.OK)
-                                .build();
         }
 
         /**
-         * CHANGE SIM STATUS
-         * 
-         * This service changes the status of a SIM card
-         * First, he check if the status is valid
-         * Then, he check if the sim exists, if not, he throws an exception
-         * If the sim exists, he changes the status of the sim
-         * Finally, he returns a BasicResponse with the sim
-         * 
-         * @param id
-         * @param status
-         * @return
+         * Service: Search non-installed SIMs
+         * @param query
+         * @param page
+         * @param size
+         * @return MyResponse
          * @throws BasicException
          */
-
-        public BasicResponse changeSimStatus(Long id, String status) throws BasicException {
-                // Find the sim
-                Sim sim = simRepository.findById(id).orElseThrow(
-                                () -> new BasicException(BasicResponse.builder()
-                                                .content(null)
-                                                .message("Sim not found")
-                                                .messageType(MessageType.ERROR)
-                                                .status(HttpStatus.NOT_FOUND)
-                                                .build()));
-
-                // Check if the status is valid by checking the enum
-                try {
-                        SimStatus simStatus = SimStatus.valueOf(status.toUpperCase());
-                        sim.setStatus(simStatus);
-                        sim = simRepository.save(sim);
-                        return BasicResponse.builder()
-                                        .message("Sim status changed successfully")
-                                        .messageType(MessageType.SUCCESS)
-                                        .status(HttpStatus.OK)
-                                        .content(sim) // include the updated sim in the response content
+        public MyResponse searchNonInstalledSims(String query, int page, int size) {
+                // Create a pageable object
+                Pageable pageable = PageRequest.of(page - 1, size);
+                // Search non-installed sims
+                Page<Sim> simPage = simRepository.findAllByStatusAndPhoneContainingOrCcidContaining(
+                                SimStatus.NON_INSTALLED, query, pageable);
+                // Check if the page is empty
+                if (simPage.isEmpty()) {
+                        return MyResponse.builder()
+                                        .message("No non-installed SIMs found")
+                                        .status(HttpStatus.NOT_FOUND)
                                         .build();
-                } catch (IllegalArgumentException e) {
-                        throw new BasicException(BasicResponse.builder()
-                                        .content(null)
-                                        .message("Invalid status")
-                                        .messageType(MessageType.ERROR)
-                                        .status(HttpStatus.BAD_REQUEST)
-                                        .build());
                 }
+                // Else retrun the response
+                else {
+                        List<SimDTO> simDTOs = simPage.getContent().stream().map(sim -> this.transformEntityToDTO(sim))
+                                        .collect(Collectors.toList());
+                        // Build the Metadata
+                        Map<String, Object> metadata = new HashMap<>();
+                        metadata.put("currentPage", simPage.getNumber() + 1);
+                        metadata.put("totalPages", simPage.getTotalPages());
+                        metadata.put("size", simPage.getSize());
+                        // Return the response
+                        return MyResponse.builder()
+                                        .data(simDTOs)
+                                        .metadata(metadata)
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+        }
+
+
+
+        public boolean changeSimStatus(Long id, String status) {
+                try {
+                        // Check if the status is valid
+                        SimStatus simStatus = SimStatus.valueOf(status);
+                        // Find the sim
+                        Sim sim = simRepository.findById(id).orElse(null);
+                        // If the sim does not exist, return false
+                        if (sim == null) {
+                                return false;
+                        }
+                        // Else, change the status of the sim
+                        sim.setStatus(simStatus);
+                        simRepository.save(sim);
+                        // Return true
+                        return true;
+                } catch (IllegalArgumentException e) {
+                        return false;
+                }
+
         }
 
         /**

@@ -1,12 +1,10 @@
 package com.idirtrack.backend.manager;
 
-import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,8 +19,6 @@ import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.manager.dtos.ManagerRequest;
 import com.idirtrack.backend.manager.dtos.UpdateManagerRequest;
-import com.idirtrack.backend.utils.BasicError;
-import com.idirtrack.backend.utils.ValidationUtils;
 import com.idirtrack.backend.basics.MessageType;
 
 import jakarta.validation.Valid;

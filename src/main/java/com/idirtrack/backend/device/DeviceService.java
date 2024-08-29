@@ -1,23 +1,22 @@
 package com.idirtrack.backend.device;
 
 import jakarta.persistence.criteria.Predicate;
-import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.BindingResult;
 
 import com.idirtrack.backend.basics.BasicError;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.basics.BasicValidation;
 import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.basics.MetaData;
 import com.idirtrack.backend.device.https.DeviceRequest;
 import com.idirtrack.backend.device.https.DeviceUpdateRequest;
 import com.idirtrack.backend.deviceType.DeviceType;
 import com.idirtrack.backend.deviceType.DeviceTypeRepository;
-import com.idirtrack.backend.deviceType.DeviceTypeService;
+import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.stock.Stock;
 import com.idirtrack.backend.stock.StockRepository;
+import com.idirtrack.backend.utils.ErrorResponse;
+import com.idirtrack.backend.utils.MyResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,7 +42,6 @@ public class DeviceService {
         private final DeviceTypeRepository deviceTypeRepository;
         private final DeviceStockRepository deviceStockRepository;
         private final StockRepository stockRepository;
-        private final DeviceTypeService deviceTypeService;
 
         /**
          * Count devices and group by status
@@ -526,92 +524,85 @@ public class DeviceService {
                                 .metadata(null)
                                 .build();
         }
-        // get all device non installed by pagination
 
         // Get all device non installed by pagination
-        public BasicResponse getAllDevicesNonInstalled(int page, int size) {
+        public MyResponse getAllDevicesNonInstalled(int page, int size) {
                 // Create pagination
                 Pageable pageRequest = PageRequest.of(page - 1, size);
-
                 // Retrieve all devices from the database
                 Page<Device> devicePage = deviceRepository.findAllByStatus(DeviceStatus.NON_INSTALLED, pageRequest);
-
-                // Create a list of DTOs for devices
-                List<DeviceBoitierDTO> deviceDTOs = devicePage.getContent().stream()
-                                .map(device -> DeviceBoitierDTO.builder()
-                                                .deviceMicroserviceId(device.getId())
-                                                .imei(device.getImei())
-                                                .type(device.getDeviceType().getName())
-                                                .build())
-                                .collect(Collectors.toList());
-
-                MetaData metaData = MetaData.builder()
-                                .currentPage(devicePage.getNumber() + 1)
-                                .totalPages(devicePage.getTotalPages())
-                                .size(devicePage.getSize())
-                                .build();
-
-                // if device not found
+                // If page is empty
                 if (devicePage.isEmpty()) {
-                        return BasicResponse.builder()
-                                        .content(null)
-                                        .status(HttpStatus.NOT_FOUND)
-                                        .message("No devices found")
-                                        .messageType(MessageType.ERROR)
-                                        .metadata(null)
+                        return MyResponse.builder()
+                                        .data(null)
+                                        .status(HttpStatus.OK)
                                         .build();
                 }
-                return BasicResponse.builder()
-                                .content(deviceDTOs)
-                                .metadata(metaData)
-                                .content(deviceDTOs)
-                                .status(HttpStatus.OK)
-                                .message("Devices retrieved successfully")
-                                .metadata(metaData)
-                                .build();
+                // Else create a list of DTOs for devices
+                else {
+                        // Create a list of DTOs for devices
+                        List<DeviceDTO> deviceDTOs = devicePage.getContent().stream()
+                                        .map(device -> DeviceDTO.builder()
+                                                        .id(device.getId())
+                                                        .IMEI(device.getImei())
+                                                        .deviceType(device.getDeviceType().getName())
+                                                        .deviceTypeId(device.getDeviceType().getId())
+                                                        .build())
+                                        .collect(Collectors.toList());
+                        // Build metadata Map
+                        Map<String, Object> metadata = new HashMap<>();
+                        metadata.put("currentPage", devicePage.getNumber() + 1);
+                        metadata.put("totalPages", devicePage.getTotalPages());
+                        metadata.put("size", devicePage.getSize());
+                        metadata.put("totalElements", devicePage.getTotalElements());
+                        // Return the response
+                        return MyResponse.builder()
+                                        .data(deviceDTOs)
+                                        .status(HttpStatus.OK)
+                                        .metadata(metadata)
+                                        .build();
+                }
+
         }
 
         // search device non installed by imei
-
-        public BasicResponse searchNonInstalledDevices(String imei, int page, int size) {
-                Pageable pageable = PageRequest.of(page - 1, size);
+        public MyResponse searchNonInstalledDevices(String query, int page, int size) {
+                // Create pagination
+                Pageable pageable = PageRequest.of(page - 1, size,Sort.by("id").descending());
+                // Search devices by IMEI
                 Page<Device> devicePage = deviceRepository.findAllByStatusAndImeiContaining(DeviceStatus.NON_INSTALLED,
-                                imei,
+                                query,
                                 pageable);
-
+                // If page is empty
                 if (devicePage.isEmpty()) {
-                        return BasicResponse.builder()
-                                        .content(null)
-                                        .status(HttpStatus.NOT_FOUND)
-                                        .message("No non-installed devices found")
-                                        .messageType(MessageType.ERROR)
-                                        .metadata(null)
+                        return MyResponse.builder()
+                                        .data(null)
+                                        .status(HttpStatus.OK)
                                         .build();
                 }
-
-                List<DeviceBoitierDTO> deviceDTOs = devicePage.getContent().stream()
-                                .map(device -> DeviceBoitierDTO.builder()
-                                                .deviceMicroserviceId(device.getId())
-                                                .imei(device.getImei())
-                                                .type(device.getDeviceType().getName())
-                                                .build())
-                                .collect(Collectors.toList());
-
-                MetaData metaData = MetaData.builder()
-                                .currentPage(devicePage.getNumber() + 1)
-                                .totalPages(devicePage.getTotalPages())
-                                .size(devicePage.getSize())
-                                .build();
-
-                return BasicResponse.builder()
-                                .content(deviceDTOs)
-                                // .content(deviceDTOs)
-
-                                .status(HttpStatus.OK)
-                                .message("Non-installed devices retrieved successfully")
-                                .messageType(MessageType.SUCCESS)
-                                .metadata(metaData)
-                                .build();
+                else {
+                        // Create a list of DTOs for devices
+                        List<DeviceDTO> deviceDTOs = devicePage.getContent().stream()
+                                        .map(device -> DeviceDTO.builder()
+                                                        .id(device.getId())
+                                                        .IMEI(device.getImei())
+                                                        .deviceType(device.getDeviceType().getName())
+                                                        .deviceTypeId(device.getDeviceType().getId())
+                                                        .build())
+                                        .collect(Collectors.toList());
+                        // Build metadata Map
+                        Map<String, Object> metadata = new HashMap<>();
+                        metadata.put("currentPage", devicePage.getNumber() + 1);
+                        metadata.put("totalPages", devicePage.getTotalPages());
+                        metadata.put("size", devicePage.getSize());
+                        metadata.put("totalElements", devicePage.getTotalElements());
+                        // Return the response
+                        return MyResponse.builder()
+                                        .data(deviceDTOs)
+                                        .status(HttpStatus.OK)
+                                        .metadata(metadata)
+                                        .build();
+                }
         }
 
         /**
@@ -691,33 +682,26 @@ public class DeviceService {
                                 .build();
         }
 
-        public BasicResponse changeDeviceStatus(Long id, String status) throws BasicException {
-                // Find the device
-                Device device = deviceRepository.findById(id).orElseThrow(
-                                () -> new BasicException(BasicResponse.builder()
-                                                .content(null)
-                                                .message("Device not found")
-                                                .messageType(MessageType.ERROR)
-                                                .status(HttpStatus.NOT_FOUND)
-                                                .build()));
-
-                // Check if the status is valid by checking the enum
+        // Change device status
+        public boolean changeDeviceStatus(Long id, String status) {
                 try {
-                        DeviceStatus deviceStatus = DeviceStatus.valueOf(status.toUpperCase());
+                        // Validate the status
+                        DeviceStatus deviceStatus = DeviceStatus.valueOf(status);
+
+                        // Find the device
+                        Device device = deviceRepository.findById(id).orElse(null);
+                        if (device == null) {
+                                return false;
+                        }
+
+                        // Update the device status and save
                         device.setStatus(deviceStatus);
-                        device = deviceRepository.save(device);
-                        return BasicResponse.builder()
-                                        .message("Device status changed successfully")
-                                        .messageType(MessageType.SUCCESS)
-                                        .status(HttpStatus.OK)
-                                        .build();
+                        deviceRepository.save(device);
+                        return true;
+
                 } catch (IllegalArgumentException e) {
-                        throw new BasicException(BasicResponse.builder()
-                                        .content(null)
-                                        .message("Invalid status")
-                                        .messageType(MessageType.ERROR)
-                                        .status(HttpStatus.BAD_REQUEST)
-                                        .build());
+                        // Handle invalid status
+                        return false;
                 }
         }
 
@@ -726,14 +710,11 @@ public class DeviceService {
          */
         public BasicResponse filterDevices(String status, Long deviceTypeId, String createdFrom, String createdTo,
                         int page, int size) throws BasicException {
-                // Create list of errors
-                List<BasicError> errors = new ArrayList<>();
-
                 // Create pagination
                 Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
 
                 // Convert status and dates
-                
+
                 DeviceStatus deviceStatus = status != null ? DeviceStatus.valueOf(status.toUpperCase()) : null;
                 DeviceType deviceType = deviceTypeId != null ? deviceTypeRepository.findById(deviceTypeId).orElse(null)
                                 : null;
@@ -780,6 +761,22 @@ public class DeviceService {
                                 .status(HttpStatus.OK)
                                 .metadata(metaData)
                                 .build();
+        }
+
+        /**
+         * Utils: Find device vy ID
+         * 
+         * @param {Long} id
+         */
+
+        public Device findDeviceById(Long deviceId) throws NotFoundException {
+                return deviceRepository.findById(deviceId).orElseThrow(
+                                () -> {
+                                        return new NotFoundException(ErrorResponse.builder()
+                                                        .message("Device not found with id " + deviceId)
+                                                        .status(HttpStatus.NOT_FOUND)
+                                                        .build());
+                                });
         }
 
 }

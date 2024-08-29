@@ -1,8 +1,7 @@
 package com.idirtrack.backend.sim;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.integration.IntegrationProperties.Error;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,12 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.idirtrack.backend.basics.BasicException;
-import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.basics.MessageType;
+
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.sim.https.SimRequest;
-import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.utils.RequestValidation;
 
@@ -34,8 +31,10 @@ public class SimController {
     @Autowired
     private SimService simService;
 
+
     /**
      * Endpoint API to get total number of SIMs by status
+     * 
      * @return
      */
 
@@ -184,45 +183,24 @@ public class SimController {
      * @param size
      * @return
      */
-    @GetMapping("/pending/")
-    public ResponseEntity<BasicResponse> getNonInstalledSimsApi(
+    @GetMapping("/non-installed/")
+    public ResponseEntity<?> getNonInstalledSimsApi(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
-        try {
-            BasicResponse response = simService.getAllNonInstalledSims(page, size);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
+        MyResponse response = simService.getAllNonInstalledSims(page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+
     }
 
-    @GetMapping("/pending/search/")
-    public ResponseEntity<BasicResponse> searchNonInstalledSimsApi(
+    @GetMapping("/non-installed/search/")
+    public ResponseEntity<?> searchNonInstalledSimsApi(
             @RequestParam(value = "query", required = false) String query,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
-        try {
-            BasicResponse response = simService.searchNonInstalledSims(query, page, size);
+        MyResponse response = simService.searchNonInstalledSims(query, page, size);
 
-            return ResponseEntity.status(response.getStatus()).body(response);
+        return ResponseEntity.status(response.getStatus()).body(response);
 
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
     }
 
     @GetMapping("/search/")
@@ -236,41 +214,5 @@ public class SimController {
 
     }
 
-    @PutMapping("/status/installed/{id}/")
-    public ResponseEntity<BasicResponse> changeSimStatusToInstalledApi(@PathVariable Long id) {
-        try {
-            BasicResponse response = simService.changeSimStatusInstalled(id);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-    }
 
-    /**
-     * CHANGE SIM STATUS
-     */
-    @PutMapping("/status/")
-    public ResponseEntity<BasicResponse> changeSimStatusApi(@RequestParam Long id, @RequestParam String status) {
-        try {
-            BasicResponse response = simService.changeSimStatus(id, status);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .content(null)
-                    .message(e.getMessage())
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-
-    }
 }

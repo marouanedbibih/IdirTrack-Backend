@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
+    @SuppressWarnings("unused")
     private static final Logger Logger = LoggerFactory.getLogger(JwtFilter.class);
 
     @Autowired
@@ -47,6 +48,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
+            this.logger.info("Path: '{}'" + path);
 
             // Logger the auth header
             logger.info("Auth header: '{}'" + authHeader);

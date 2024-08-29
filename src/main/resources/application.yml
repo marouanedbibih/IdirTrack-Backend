@@ -19,4 +19,15 @@ traccar:
     url: ${TRACCAR_API_URL}
 
 
+logging:
+  level:
+    org.springframework: DEBUG
+    hibernate: DEBUG
+    security: DEBUG
+    com.idirtrack: DEBUG
+    
+
+    
+
+
 

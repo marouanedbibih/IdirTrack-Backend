@@ -1,6 +1,5 @@
 package com.idirtrack.backend.device.https;
 
-import com.idirtrack.backend.device.DeviceStatus;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

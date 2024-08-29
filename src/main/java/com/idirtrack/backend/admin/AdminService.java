@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.traccar.TracCarUser;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.User;
 import com.idirtrack.backend.user.UserDTO;
