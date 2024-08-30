@@ -256,6 +256,19 @@ public class ClientController {
         }
     }
 
+    //Filter clients by category and is active 
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/filter")
+    public ResponseEntity<MyResponse> filterClientsByCategoryAndStatus(
+            @RequestParam Long categoryId,
+            @RequestParam boolean isDisabled,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        MyResponse response = clientService.filterClientsByCategoryAndStatus(categoryId, isDisabled, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+
 
     // Get total number of clients
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
@@ -274,10 +287,20 @@ public class ClientController {
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/categories/")
     public ResponseEntity<?> getCategoriesWithClientCount(
-        @RequestParam(value = "page", defaultValue = "0") int page,
+        @RequestParam(value = "page", defaultValue = "1") int page,
         @RequestParam(value = "size", defaultValue = "10") int size) {
     MyResponse response = categoryService.getCategoriesWithClientCount(page, size);
     return ResponseEntity.status(response.getStatus()).body(response);
 }
+
+    //get count of clients active and inactive
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/statistics/account/")
+    public ResponseEntity<MyResponse> getActiveAndInactiveClientCount() {
+        MyResponse response = clientService.getActiveAndInactiveClientCount();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }
+
+
 

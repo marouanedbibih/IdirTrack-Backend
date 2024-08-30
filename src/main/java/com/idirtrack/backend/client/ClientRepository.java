@@ -25,5 +25,13 @@ public interface ClientRepository  extends JpaRepository<Client, Long> {
   "c.category.name LIKE CONCAT('%', :keyword, '%'))")
 Page<Client> searchClients(@Param("keyword") String keyword, Pageable pageable);
 
-  
+@Query("SELECT COUNT(c) FROM Client c WHERE c.isDisabled = false")
+long countActiveClients();
+
+@Query("SELECT COUNT(c) FROM Client c WHERE c.isDisabled = true")
+long countInactiveClients();
+
+@Query("SELECT c FROM Client c WHERE c.category.id = :categoryId AND c.isDisabled = :isDisabled")
+Page<Client> findByCategoryAndStatus(Long categoryId, boolean isDisabled, Pageable pageable);
+
 }

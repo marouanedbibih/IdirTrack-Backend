@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,9 +17,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
+import com.idirtrack.backend.utils.MyResponse;
 
 public class ClientCategoryServiceTest {
   
@@ -27,6 +34,9 @@ public class ClientCategoryServiceTest {
 
     @InjectMocks
     private ClientCategoryService clientCategoryService;
+
+    @Mock
+    private ClientRepository clientRepository; 
 
     @BeforeEach
     void setUp() {
@@ -121,6 +131,28 @@ void createClientCategory_shouldCreateCategory_whenNameIsUnique() throws Already
 
         verify(clientCategoryRepository, never()).delete(any(ClientCategory.class));
     }
-
-
+    @Test
+    void getCategoriesWithClientCount_shouldReturnCategoriesWithClientCount() {
+      // Arrange
+      ClientCategory category1 = ClientCategory.builder().id(1L).name("Category 1").build();
+      ClientCategory category2 = ClientCategory.builder().id(2L).name("Category 2").build();
+  
+      Pageable pageable = PageRequest.of(0, 10); // Ensure this is valid
+      Page<ClientCategory> categoriesPage = new PageImpl<>(List.of(category1, category2), pageable, 2);
+  
+      when(clientCategoryRepository.findAll(pageable)).thenReturn(categoriesPage);
+      when(clientRepository.countByCategoryId(1L)).thenReturn(15L);
+      when(clientRepository.countByCategoryId(2L)).thenReturn(10L);
+  
+      // Act
+      MyResponse response = clientCategoryService.getCategoriesWithClientCount(1, 10);
+  
+      // Assert
+      List<ClientCategoryDto> categories = (List<ClientCategoryDto>) response.getData();
+      assertEquals(2, categories.size());
+      assertEquals(15L, categories.get(0).getTotalClients());
+      assertEquals(10L, categories.get(1).getTotalClients());
+      assertEquals("Categories retrieved successfully", response.getMessage());
+      assertEquals(2, response.getMetadata().get("totalElements"));
+  }
 }

@@ -293,7 +293,43 @@ public class ClientService {
       return clientRepository.count();
   }
 
-  
+  //get number of clients active and inactive
+  public MyResponse getActiveAndInactiveClientCount() {
+    long activeClients = clientRepository.countActiveClients();
+    long inactiveClients = clientRepository.countInactiveClients();
+
+    Map<String, Object> data = Map.of(
+        "activeClients", activeClients,
+        "inactiveClients", inactiveClients
+    );
+
+    return MyResponse.builder()
+        .data(data)
+        .message("Successfully retrieved active and inactive client counts")
+        .status(HttpStatus.OK)
+        .build();
+}
+
+//Filter clients by category and active status
+
+public MyResponse filterClientsByCategoryAndStatus(Long categoryId, boolean isDisabled, int page, int size) {
+  Pageable pageable = PageRequest.of(page - 1, size);
+  Page<Client> clients = clientRepository.findByCategoryAndStatus(categoryId, isDisabled, pageable);
+
+  Map<String, Object> metadata = Map.of(
+      "totalPages", clients.getTotalPages(),
+      "totalElements", clients.getTotalElements(),
+      "currentPage", clients.getNumber(),
+      "size", clients.getSize()
+  );
+
+  return MyResponse.builder()
+      .data(clients.getContent())
+      .metadata(metadata)
+      .message("Successfully filtered clients by category and status")
+      .status(HttpStatus.OK)
+      .build();
+}
   
 
 }

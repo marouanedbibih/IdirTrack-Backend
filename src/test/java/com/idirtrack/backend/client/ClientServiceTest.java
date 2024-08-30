@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,11 +20,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.UserService;
+import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.user.User;
 
 
@@ -117,6 +125,49 @@ public class ClientServiceTest {
         verify(userService, never()).deleteUser(anyLong());
         verify(clientRepository, never()).delete(any(Client.class));
     }
+
+    @Test
+    void getActiveAndInactiveClientCount_shouldReturnCorrectCounts() {
+        // Arrange
+        when(clientRepository.countActiveClients()).thenReturn(42L);
+        when(clientRepository.countInactiveClients()).thenReturn(8L);
+
+        // Act
+        MyResponse response = clientService.getActiveAndInactiveClientCount();
+
+        // Assert
+        Map<String, Object> data = (Map<String, Object>) response.getData();
+        assertEquals(42L, data.get("activeClients"));
+        assertEquals(8L, data.get("inactiveClients"));
+        assertEquals("Successfully retrieved active and inactive client counts", response.getMessage());
+        assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+      @Test
+    void filterClientsByCategoryAndStatus_shouldReturnFilteredClients() {
+        // Arrange
+        Long categoryId = 1L;
+        boolean isDisabled = false;
+        Pageable pageable = PageRequest.of(0, 10);
+        Client client1 = new Client(); // Initialize client1 with appropriate values
+        Client client2 = new Client(); // Initialize client2 with appropriate values
+
+        Page<Client> clientsPage = new PageImpl<>(List.of(client1, client2), pageable, 2);
+
+        when(clientRepository.findByCategoryAndStatus(categoryId, isDisabled, pageable)).thenReturn(clientsPage);
+
+        // Act
+        MyResponse response = clientService.filterClientsByCategoryAndStatus(categoryId, isDisabled, 1, 10);
+
+        // Assert
+        List<Client> clients = (List<Client>) response.getData();
+        assertEquals(2, clients.size());
+        assertEquals("Successfully filtered clients by category and status", response.getMessage());
+        assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+
+
 
 
 }
