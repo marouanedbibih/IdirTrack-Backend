@@ -1,11 +1,9 @@
 package com.idirtrack.backend.vehicle;
 
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +32,23 @@ public class VehcileController {
 
     @Autowired
     private VehicleService vehicleService;
+
+    // Endpoint to search for a vehicle
+    @GetMapping("/search")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    public ResponseEntity<?> searchVehicle(
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        try {
+            MyResponse response = vehicleService.searchVehicle(search, page, size);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.builder()
+                    .message(ex.getMessage())
+                    .build());
+        }
+    }
 
     // Endpoint to delete a vehicle
     @DeleteMapping("/{vehicleId}/")

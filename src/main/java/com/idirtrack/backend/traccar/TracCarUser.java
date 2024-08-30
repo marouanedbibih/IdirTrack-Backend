@@ -116,5 +116,38 @@ public class TracCarUser {
                 .attributes(new HashMap<>()) 
                 .build();
     }
+    public static TracCarUser buildClient(UserDTO user) {
+        return TracCarUser.builder()
+                // Client infos
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .password(user.getPassword())
+                // Client permissions
+                .readonly(true)
+                .administrator(false)
+                .deviceLimit(-1)
+                .userLimit(0)
+                .deviceReadonly(true)
+                .limitCommands(false)
+                .disableReports(false)
+                // Client Map settings
+                .map(null)
+                .latitude(0.0)
+                .longitude(0.0)
+                .zoom(0)
+                // Client settings
+                .coordinateFormat("string")
+                .disabled(false)
+                .expirationTime(null)
+                .fixedEmail(false)
+                .poiLayer("")
+                .totpKey(null)
+                .temporary(false)
+                .login(null)
+                // Client attributes
+                .attributes(new HashMap<>()) 
+                .build();
+    }
 
 }

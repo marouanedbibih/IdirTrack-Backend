@@ -1,5 +1,7 @@
 package com.idirtrack.backend.basics;
 
+import org.springframework.http.ResponseCookie;
+
 import com.idirtrack.backend.utils.ErrorResponse;
 
 public class BasicException extends Exception {
@@ -32,4 +34,12 @@ public class BasicException extends Exception {
   public ErrorResponse getErrorResponse() {
     return errorResponse;
   }
+
+  // Set Response cookie
+   public ResponseCookie createSessionCookie(String sessionId) {
+        return ResponseCookie.from("JSESSIONID", sessionId)
+                .httpOnly(true)
+                .path("/")
+                .build();
+    }
 }

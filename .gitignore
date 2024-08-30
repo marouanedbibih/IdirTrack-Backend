@@ -34,3 +34,6 @@ build/
 
 #Ignore the static resources directory
 src/main/resources/static/
+
+#Ignore the application properties file#
+src/main/resources/application.yml
