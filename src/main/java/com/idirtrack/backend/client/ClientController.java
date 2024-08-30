@@ -1,5 +1,8 @@
 package com.idirtrack.backend.client;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,8 @@ import com.idirtrack.backend.utils.ValidationUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
@@ -250,5 +255,29 @@ public class ClientController {
                             .build());
         }
     }
+
+
+    // Get total number of clients
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/total")
+    public ResponseEntity<BasicResponse> getTotalClients() {
+        long totalClients = clientService.getTotalClients();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(BasicResponse.builder()
+                        .message("Total clients retrieved successfully")
+                        .status(HttpStatus.OK)
+                        .content(totalClients)
+                        .build());
+    }
+
+    // Get all categories with pagination and total count of clients
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/categories/")
+    public ResponseEntity<?> getCategoriesWithClientCount(
+        @RequestParam(value = "page", defaultValue = "0") int page,
+        @RequestParam(value = "size", defaultValue = "10") int size) {
+    MyResponse response = categoryService.getCategoriesWithClientCount(page, size);
+    return ResponseEntity.status(response.getStatus()).body(response);
+}
 }
 
