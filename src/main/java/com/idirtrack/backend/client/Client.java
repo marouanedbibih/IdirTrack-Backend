@@ -21,7 +21,7 @@ import com.idirtrack.backend.utils.BasicEntity;
 import java.util.List;
 
 @Entity
-@Table(name = "client")
+@Table(name = "clients")
 @Data
 @EqualsAndHashCode(callSuper = false)
 @SuperBuilder

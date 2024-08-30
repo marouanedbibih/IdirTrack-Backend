@@ -126,24 +126,22 @@ public class ClientController {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestHeader("Authorization") String token){
-            try {
-                BasicResponse response = clientService.searchClients(keyword, page, size);
-                 return ResponseEntity.status(response.getStatus()).body(response);
+            @RequestHeader("Authorization") String token) {
+        try {
+            BasicResponse response = clientService.searchClients(keyword, page, size);
+            return ResponseEntity.status(response.getStatus()).body(response);
 
-            }
-            catch (BasicException e) {
-                return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-            } catch (Exception e) {
-                return ResponseEntity
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(BasicResponse
-                                .builder()
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .message(e.getMessage())
-                                .build());
-            }
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse
+                            .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
         }
+    }
 
 }
-
