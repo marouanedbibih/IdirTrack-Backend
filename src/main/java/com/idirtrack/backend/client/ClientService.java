@@ -48,6 +48,7 @@ public class ClientService {
     private final UserService userService;
     private final TraccarUserService traccarUserService;
 
+
     public Client findClientById(Long id) throws NotFoundException {
         return clientRepository.findById(id)
                 .orElseThrow(
@@ -282,5 +283,8 @@ public class ClientService {
          // Delete the client from the database
          clientRepository.delete(client);
      }
+
+
+  
 
 }

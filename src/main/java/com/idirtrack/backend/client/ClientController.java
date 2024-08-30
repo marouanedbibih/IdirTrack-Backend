@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import com.idirtrack.backend.utils.ValidationUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.idirtrack.backend.client.dtos.ClientRequest;
+import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 
 @RestController
@@ -32,6 +34,7 @@ import com.idirtrack.backend.errors.NotFoundException;
 @RequiredArgsConstructor
 public class ClientController {
 
+    private final ClientCategoryService  categoryService;
     private final ClientService clientService;
     // private final ClientRequest clientRequest;
     // //call jwtUtils
@@ -175,6 +178,73 @@ public class ClientController {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(BasicResponse
                             .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/categories/{id}")
+    public ResponseEntity<ClientCategory> getClientCategoryById(@PathVariable Long id) {
+        try {
+            ClientCategory clientCategory = categoryService.getClientCategoryById(id);
+            return ResponseEntity.ok(clientCategory);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PostMapping("/categories/")
+    public ResponseEntity<BasicResponse> createClientCategory(@RequestBody @Valid ClientCategory clientCategory) {
+        try {
+            categoryService.createClientCategory(clientCategory);
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    BasicResponse.builder().message("Category created successfully").status(HttpStatus.CREATED).build());
+        } catch (AlreadyExistException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
+        }
+    }
+
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<BasicResponse> updateClientCategory(@PathVariable Long id, @RequestBody @Valid ClientCategory clientCategoryDetails) {
+        try {
+            categoryService.updateClientCategory(id, clientCategoryDetails);
+            return ResponseEntity.ok(
+                    BasicResponse.builder().message("Category updated successfully").status(HttpStatus.OK).build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.NOT_FOUND).build());
+        } catch (AlreadyExistException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<BasicResponse> deleteClientCategory(@PathVariable Long id) {
+        try {
+            categoryService.deleteClientCategory(id);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(BasicResponse.builder()
+                            .message("Client category deleted successfully")
+                            .status(HttpStatus.OK)
+                            .build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BasicResponse.builder()
+                            .message("Client category not found with id: " + id)
+                            .status(HttpStatus.NOT_FOUND)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.builder()
                             .status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .message(e.getMessage())
                             .build());
