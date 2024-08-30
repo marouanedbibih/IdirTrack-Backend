@@ -31,8 +31,8 @@ public class BoitierController {
     private final BoitierService boitierService;
 
     // Endpoint to create a new boitier
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @PostMapping("/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> createBoitier(@Valid @RequestBody BoitierRequest request, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return RequestValidation.handleValidationErrors(bindingResult);
@@ -49,8 +49,8 @@ public class BoitierController {
     }
 
     // Endpoint to update a boitier by ID
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @PutMapping("/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> updateBoitier(@PathVariable Long id, @Valid @RequestBody BoitierRequest request,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -68,8 +68,8 @@ public class BoitierController {
     }
 
     // Endpoint to get boitier by ID
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @GetMapping("/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> getBoitier(@PathVariable Long id) {
         try {
             MyResponse response = boitierService.getBoitierById(id);
@@ -80,8 +80,8 @@ public class BoitierController {
     }
 
     // Endpoint to get list of unassigned boitiers
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @GetMapping("/unassigned/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> getUnassignedBoitiers() {
         MyResponse response = boitierService.getUnassignedBoitiers();
         return ResponseEntity.status(response.getStatus()).body(response);
@@ -89,8 +89,8 @@ public class BoitierController {
     }
 
     // Endpoint to delete boitier by ID
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
     @DeleteMapping("/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> deleteBoitier(
             @PathVariable Long id,
             @RequestParam(required = true, defaultValue = "false") boolean isLost) {

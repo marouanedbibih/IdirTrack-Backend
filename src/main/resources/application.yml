@@ -1,13 +1,11 @@
-server:
-    port: ${SPRING_APP_PORT}
 spring:
     application:
-      name: ${SPRING_APPLICATION_NAME}
+      name: ${APP_NAME}
     datasource:
-      driver-class-name: ${DATASOURCE_DRIVER_CLASS_NAME}
-      url: ${DATASOURCE_URL}
-      username: ${DATASOURCE_USERNAME}
-      password: ${DATASOURCE_PASSWORD}  
+      driver-class-name: ${DB_DRIVER_CLASS_NAME}
+      url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}  
     jpa:
       hibernate:
         ddl-auto: ${JPA_HIBERNATE_DDL_AUTO}
@@ -18,6 +16,10 @@ traccar:
   api:
     url: ${TRACCAR_API_URL}
 
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+
 
 logging:
   level:
@@ -25,6 +27,8 @@ logging:
     hibernate: DEBUG
     security: DEBUG
     com.idirtrack: DEBUG
+
+
     
 
     

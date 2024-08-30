@@ -58,7 +58,7 @@ public class VehicleService {
 
         // Delete a vehicle
         @Transactional
-        public MyResponse deleteVehicle(Long vehicleId,boolean isLost) throws NotFoundException, MyException {
+        public MyResponse deleteVehicle(Long vehicleId, boolean isLost) throws NotFoundException, MyException {
                 // Find the vehicle by ID
                 Vehicle vehicle = this.findVehicleById(vehicleId);
                 // Delete the vehicle's boitiers from Traccar
@@ -384,9 +384,49 @@ public class VehicleService {
                 }
         }
 
-        // Remove boitier form the vehicle
-        // public void removeBoitierFromVehicle(Long vehicleId, Long boitierId) throws
-        // NotFoundException, MyException {
-        // return null;
-        // }
+        public MyResponse searchVehicle(String search, int page, int size) {
+                // Create a pagination request
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").ascending());
+                // Get Page of vehicles by search
+                Page<Vehicle> vehiclesPage = vehicleRepository.search(search, pageable);
+                // If the vehicles list is empty
+                if (vehiclesPage.getContent().isEmpty()) {
+                        return MyResponse.builder()
+                                        .message("No vehicles found")
+                                        .status(HttpStatus.NO_CONTENT)
+                                        .build();
+                } else{
+                        // Build the DTO of vehicle resppnse
+                        List<VehicleResponse> vehiclesDTO = vehiclesPage.getContent().stream()
+                                        .map(vehicle -> {
+                                                ClientDTO clientDTO = ClientDTO.builder()
+                                                                .id(vehicle.getClient().getId())
+                                                                .name(vehicle.getClient().getUser().getName())
+                                                                .company(vehicle.getClient().getCompany())
+                                                                .build();
+                                                VehicleDTO vehicleDTO = VehicleDTO.builder()
+                                                                .id(vehicle.getId())
+                                                                .matricule(vehicle.getMatricule())
+                                                                .type(vehicle.getType())
+                                                                .build();
+                                                return VehicleResponse.builder()
+                                                                .vehicle(vehicleDTO)
+                                                                .client(clientDTO)
+                                                                .build();
+                                        })
+                                        .collect(Collectors.toList());
+                        // Metadata Map object
+                        Map<String, Object> metadata = Map.of(
+                                        "currentPage", vehiclesPage.getNumber() + 1,
+                                        "totalPages", vehiclesPage.getTotalPages(),
+                                        "size", vehiclesPage.getSize());
+                        // Retrun the response
+                        return MyResponse.builder()
+                                        .data(vehiclesDTO)
+                                        .metadata(metadata)
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+        }
+
 }
