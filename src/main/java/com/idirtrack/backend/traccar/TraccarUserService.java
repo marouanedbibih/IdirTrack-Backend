@@ -8,11 +8,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
+import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.user.UserDTO;
 import com.idirtrack.backend.user.UserRole;
@@ -83,7 +85,6 @@ public class TraccarUserService {
          // Set headers using the session ID from the JWT
          HttpHeaders headers = createHeadersFromToken(jwtToken);
 
-        // add basic auth with username and password idirtech idirtech1
         
 
         // Create the HttpEntity
@@ -143,6 +144,41 @@ public class TraccarUserService {
         }
     }
 
+    //Delete client 
+    public void deleteUser(Long traccarUserId, String token) throws BasicException {
+        String url = "http://152.228.219.146:8082/api/users/" + traccarUserId;
+
+        String jwtToken = token.replace("Bearer ", "").trim();
+
+    
+        // Set headers using the session ID from the JWT
+        HttpHeaders headers = createHeadersFromToken(jwtToken);       
+    
+        // Create the HttpEntity without a body (for DELETE requests, the body is usually not required)
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        
+        try {
+            // Send the DELETE request
+            ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
+    
+            // Check if the response is successful (2xx status codes)
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new BasicException(BasicResponse.builder()
+                        .messageType(MessageType.ERROR)
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .message("Failed to delete user in Traccar")
+                        .build());
+            }
+        } catch (Exception e) {
+            throw new BasicException(BasicResponse.builder()
+                    .messageType(MessageType.ERROR)
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .message("Failed to delete user in Traccar: " + e.getMessage())
+                    .build());
+        }
+    }
+    
+
     public boolean deleteUser(Long traccarId) throws BasicException {
         String url = "http://152.228.219.146:8082/api/users/" + traccarId;
 
@@ -176,6 +212,8 @@ public class TraccarUserService {
 
         // Extract the session ID from the JWT token
         String sessionId = jwtUtils.extractSession(jwtToken);
+
+
 
         // Check if the session ID is not null
         if (sessionId != null) {

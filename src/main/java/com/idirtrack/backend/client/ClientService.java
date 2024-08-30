@@ -253,5 +253,34 @@ public class ClientService {
         }
 
 
+        //delete client
+
+/**
+     * Service to delete a client
+     * 
+     * @param id
+     * @param token
+     * @throws BasicException
+     */
+
+     @Transactional
+     public void deleteClient(Long id, String token) throws BasicException, NotFoundException {
+         // Find the client by ID or throw a NotFoundException if not found
+         Client client = clientRepository.findById(id)
+                 .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
+                         .message("Client not found with id: " + id)
+                         .build()));
+ 
+         // Remove the client from Traccar if the client has a Traccar ID
+         if (client.getUser().getTraccarId() != null) {
+             traccarUserService.deleteUser(client.getUser().getTraccarId(), token);
+         }
+ 
+         // Remove the user associated with the client
+         userService.deleteUser(client.getUser().getId());
+ 
+         // Delete the client from the database
+         clientRepository.delete(client);
+     }
 
 }
