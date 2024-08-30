@@ -36,6 +36,8 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDto;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 
@@ -285,6 +287,13 @@ public class ClientService {
      }
 
 
+
+     //get total clients
+     public long getTotalClients() {
+      return clientRepository.count();
+  }
+
+  
   
 
 }

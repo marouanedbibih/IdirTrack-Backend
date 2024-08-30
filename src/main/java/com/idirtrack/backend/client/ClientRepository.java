@@ -12,6 +12,9 @@ import org.springframework.data.domain.Pageable;
 public interface ClientRepository  extends JpaRepository<Client, Long> {
    
 
+  long countByCategoryId(Long categoryId);
+
+
   //search client  list with pagination
   @Query("SELECT c FROM Client c WHERE " +
   "(c.user.name LIKE CONCAT('%', :keyword, '%') OR " +
