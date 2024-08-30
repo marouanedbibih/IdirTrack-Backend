@@ -51,12 +51,15 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                     // Endpoints for ADMIN
-                    .requestMatchers("/user-api/admin/**").hasAuthority("ADMIN")
-                    /**
-                     * Endpoints for manager APIs, only users with the role ADMIN can access this
-                     */
-                    .requestMatchers("/user-api/manager/**").hasAuthority("ADMIN")
+                    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+
                     .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/manager/**").hasAuthority("ADMIN")
+                    /**
+                     * Endpoints for client APIs, only users with the role ADMIN and MANAGER can access this
+                     */
+                    .requestMatchers("/api/client/**").hasAnyAuthority("ADMIN", "MANAGER")
+                  
 
                     .anyRequest().authenticated();
         });

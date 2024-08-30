@@ -51,6 +51,9 @@ public class User extends BasicEntity implements UserDetails {
     private UserRole role;
     private Long traccarId;
 
+    //img 
+    private String image;
+
     // Admin
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude // Prevents circular reference during toString()

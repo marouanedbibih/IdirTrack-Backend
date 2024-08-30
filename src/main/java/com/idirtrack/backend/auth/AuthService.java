@@ -62,7 +62,6 @@ public class AuthService {
                 if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                     BasicError error = BasicError.of("password", "Incorrect password");
                     throw new BasicException(BasicResponse.builder()
-                            // .error(error)
                             .build());
 
                 }

@@ -37,6 +37,7 @@ public class JwtUtils {
     public String extractSession(String token) {
         return extractClaim(token, claims -> claims.get("session", String.class));
     }
+    
 
     // Create token with extra claims
     public String createToken(UserDTO user,String session) {
@@ -93,4 +94,10 @@ public class JwtUtils {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    //extratct token from header
+    public String extractToken(String header) {
+        return header.replace("Bearer ", "").trim();
+    }
+    
 }
