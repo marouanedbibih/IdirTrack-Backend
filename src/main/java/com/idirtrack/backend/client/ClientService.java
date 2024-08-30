@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDto;
 import com.idirtrack.backend.client.dtos.ClientRequest;
+import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 
 
 
@@ -49,6 +50,7 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final UserService userService;
     private final TraccarUserService traccarUserService;
+    private final ClientCategoryRepository clientCategoryRepository;
 
 
     public Client findClientById(Long id) throws NotFoundException {
@@ -293,7 +295,88 @@ public class ClientService {
       return clientRepository.count();
   }
 
-  
-  
+  //get number of clients active and inactive
+  public MyResponse getActiveAndInactiveClientCount() {
+    long activeClients = clientRepository.countActiveClients();
+    long inactiveClients = clientRepository.countInactiveClients();
+
+    Map<String, Object> data = Map.of(
+        "activeClients", activeClients,
+        "inactiveClients", inactiveClients
+    );
+
+    return MyResponse.builder()
+        .data(data)
+        .message("Successfully retrieved active and inactive client counts")
+        .status(HttpStatus.OK)
+        .build();
+}
+
+//Filter clients by category and active status
+
+public MyResponse filterClientsByCategoryAndStatus(Long categoryId, boolean isDisabled, int page, int size) {
+  Pageable pageable = PageRequest.of(page - 1, size);
+  Page<Client> clients = clientRepository.findByCategoryAndStatus(categoryId, isDisabled, pageable);
+
+  Map<String, Object> metadata = Map.of(
+      "totalPages", clients.getTotalPages(),
+      "totalElements", clients.getTotalElements(),
+      "currentPage", clients.getNumber(),
+      "size", clients.getSize()
+  );
+
+  return MyResponse.builder()
+      .data(clients.getContent())
+      .metadata(metadata)
+      .message("Successfully filtered clients by category and status")
+      .status(HttpStatus.OK)
+      .build();
+}
+
+
+//Update client info 
+@Transactional
+public MyResponse updateClient(Long clientId, ClientUpdateRequest updateRequest) throws NotFoundException, BasicException {
+  Client client = clientRepository.findById(clientId)
+          .orElseThrow(() -> new NotFoundException("Client not found with id: " + clientId));
+
+  // Update user details
+  userService.isUsernameTakenExcept(updateRequest.getUsername(), client.getUser().getId());
+  userService.isEmailTakenExcept(updateRequest.getEmail(), client.getUser().getId());
+  userService.isPhoneTakenExcept(updateRequest.getPhone(), client.getUser().getId());
+
+  UserDTO userDTO = UserDTO.builder()
+          .username(updateRequest.getUsername())
+          .name(updateRequest.getName())
+          .email(updateRequest.getEmail())
+          .phone(updateRequest.getPhone())
+          .password(updateRequest.getPassword())
+
+          .role(client.getUser().getRole()) // assuming role does not change
+          .traccarId(client.getUser().getTraccarId())
+          .build();
+
+  userService.updateUserInDB(userDTO, client.getUser().getId());
+
+  // Update client-specific details
+  client.setCompany(updateRequest.getCompany());
+  client.setCne(updateRequest.getCne());
+  client.setRemarque(updateRequest.getRemarque());
+  client.setDisabled(updateRequest.isDisabled());
+
+  if (updateRequest.getCategoryId() != null) {
+      ClientCategory category = clientCategoryRepository.findById(updateRequest.getCategoryId())
+              .orElseThrow(() -> new NotFoundException("Category not found with id: " + updateRequest.getCategoryId()));
+      client.setCategory(category);
+  }
+
+  clientRepository.save(client);
+
+  return MyResponse.builder()
+          .data(client)
+          .message("Client updated successfully")
+          .status(HttpStatus.OK)
+          .build();
+}
 
 }

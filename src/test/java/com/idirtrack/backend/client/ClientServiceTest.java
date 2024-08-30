@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,11 +20,18 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.basics.BasicException;
+import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.UserService;
+import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.user.User;
 
 
@@ -38,6 +47,9 @@ public class ClientServiceTest {
 
     @InjectMocks
     private ClientService clientService;
+
+    @Mock 
+    private ClientCategoryRepository clientCategoryRepository;
 
     private Client client;
     private User user;
@@ -117,6 +129,85 @@ public class ClientServiceTest {
         verify(userService, never()).deleteUser(anyLong());
         verify(clientRepository, never()).delete(any(Client.class));
     }
+
+    @Test
+    void getActiveAndInactiveClientCount_shouldReturnCorrectCounts() {
+        // Arrange
+        when(clientRepository.countActiveClients()).thenReturn(42L);
+        when(clientRepository.countInactiveClients()).thenReturn(8L);
+
+        // Act
+        MyResponse response = clientService.getActiveAndInactiveClientCount();
+
+        // Assert
+        Map<String, Object> data = (Map<String, Object>) response.getData();
+        assertEquals(42L, data.get("activeClients"));
+        assertEquals(8L, data.get("inactiveClients"));
+        assertEquals("Successfully retrieved active and inactive client counts", response.getMessage());
+        assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+      @Test
+    void filterClientsByCategoryAndStatus_shouldReturnFilteredClients() {
+        // Arrange
+        Long categoryId = 1L;
+        boolean isDisabled = false;
+        Pageable pageable = PageRequest.of(0, 10);
+        Client client1 = new Client(); // Initialize client1 with appropriate values
+        Client client2 = new Client(); // Initialize client2 with appropriate values
+
+        Page<Client> clientsPage = new PageImpl<>(List.of(client1, client2), pageable, 2);
+
+        when(clientRepository.findByCategoryAndStatus(categoryId, isDisabled, pageable)).thenReturn(clientsPage);
+
+        // Act
+        MyResponse response = clientService.filterClientsByCategoryAndStatus(categoryId, isDisabled, 1, 10);
+
+        // Assert
+        List<Client> clients = (List<Client>) response.getData();
+        assertEquals(2, clients.size());
+        assertEquals("Successfully filtered clients by category and status", response.getMessage());
+        assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+     @Test
+    void updateClient_shouldUpdateClientSuccessfully() throws NotFoundException, BasicException {
+        // Arrange
+        Long clientId = 1L;
+        Client client = new Client();
+        client.setId(clientId);
+        User user = new User();
+        user.setId(2L);
+        client.setUser(user);
+
+        ClientUpdateRequest request = new ClientUpdateRequest();
+        request.setUsername("newUsername");
+        request.setName("New Name");
+        request.setEmail("newemail@example.com");
+        request.setPhone("123456789");
+        request.setCompany("New Company");
+        request.setCne("CNE123456");
+        request.setCategoryId(1L);
+        request.setPassword("newPassword");
+        request.setRemarque("Some remark");
+        request.setDisabled(true);
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(clientCategoryRepository.findById(1L)).thenReturn(Optional.of(new ClientCategory()));
+
+        // Act
+        MyResponse response = clientService.updateClient(clientId, request);
+
+        // Assert
+        assertEquals("Client updated successfully", response.getMessage());
+        verify(userService).isUsernameTakenExcept(request.getUsername(), user.getId());
+        verify(userService).isEmailTakenExcept(request.getEmail(), user.getId());
+        verify(userService).isPhoneTakenExcept(request.getPhone(), user.getId());
+        verify(clientRepository).save(client);
+    }
+
+
+
 
 
 }
