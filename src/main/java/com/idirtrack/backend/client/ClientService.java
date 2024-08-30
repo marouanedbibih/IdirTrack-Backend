@@ -120,7 +120,7 @@ public class ClientService {
                                 .email(clientRequest.getEmail())
                                 .phone(clientRequest.getPhone())
                                 .password(clientRequest.getPassword())
-                                .role(UserRole.MANAGER)
+                                .role(UserRole.CLIENT)
                                 .build();
 
                 // Save the user in Traccar
@@ -150,6 +150,58 @@ public class ClientService {
                                 .messageType(MessageType.ERROR)
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .build());
+        }
+
+        
+        //search clients
+        public BasicResponse searchClients(String keyword, int page, int size) throws BasicException {
+                // Create page request
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+
+                // Search clients
+                Page<Client> clients = clientRepository.searchClients(keyword, pageable);
+                if (clients.isEmpty()) {
+                        return BasicResponse.builder()
+                                        .content(null)
+                                        .message("No clients found")
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+
+                // Build the list of clients DTOs
+                List<ClientDto> clientsDto = clients.stream()
+                                .map(client -> {
+                                        User user = client.getUser();
+                                        UserDTO userDto = UserDTO.builder()
+                                                        .id(user.getId())
+                                                        .username(user.getUsername())
+                                                        .name(user.getName())
+                                                        .email(user.getEmail())
+                                                        .phone(user.getPhone())
+                                                        .password(user.getPassword())
+                                                        .traccarId(user.getTraccarId())
+                                                        .role(user.getRole())
+                                                        .build();
+                                        return ClientDto.builder()
+                                                        .id(client.getId())
+                                                        .user(userDto)
+                                                        .build();
+                                }).collect(Collectors.toList());
+
+                // Build the metadata
+                MetaData metaData = MetaData.builder()
+                                .currentPage(page)
+                                .size(size)
+                                .totalPages(clients.getTotalPages())
+                                .totalElements((int) clients.getTotalElements())
+                                .build();
+
+                // Return the list of Manager DTOs
+                return BasicResponse.builder()
+                                .content(clientsDto)
+                                .metadata(metaData)
+                                .status(HttpStatus.OK)
+                                .build();
         }
 
 

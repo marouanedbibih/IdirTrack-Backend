@@ -6,9 +6,9 @@ spring:
     name: backend
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://db-instance-idirtrack.cd0ikwgi62ui.eu-west-3.rds.amazonaws.com:3306/idirtrack?createDatabaseIfNotExist=true&useSSL=false
-    username: admin
-    password: admin1234
+    url: jdbc:mysql://localhost:3306/idirtrack?createDatabaseIfNotExist=true&useSSL=false&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root@@0603
   jpa:
     hibernate:
       ddl-auto: update

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
-import com.idirtrack.backend.utils.BasicError;
+import com.idirtrack.backend.basics.BasicError;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +27,7 @@ public class UserService {
         if (isTaken == true) {
             BasicError error = BasicError.of("username", "Username is already taken");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                    .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -44,7 +44,7 @@ public class UserService {
         if (isTaken == true) {
             BasicError error = BasicError.of("email", "Email is already taken");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                    .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -61,7 +61,7 @@ public class UserService {
         if (isTaken == true) {
             BasicError error = BasicError.of("phone", "Phone is already taken");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                    .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -92,7 +92,7 @@ public class UserService {
                 .orElseThrow(() -> {
                     BasicError error = BasicError.of("username", "Username not found");
                     return new BasicException(BasicResponse.builder()
-                            // .error(error)
+                            .error(error)
                             .messageType(MessageType.ERROR)
                             .status(HttpStatus.NOT_FOUND)
                             .build());
@@ -120,7 +120,7 @@ public class UserService {
             user = userRepository.save(user);
         } catch (Exception e) {
             throw new BasicException(BasicResponse.builder()
-                    // .error(BasicError.of("user", "User not saved in database"))
+                    .error(BasicError.of("user", "User not saved in database"))
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
@@ -142,7 +142,7 @@ public class UserService {
                 .orElseThrow(() -> {
                     BasicError error = BasicError.of("id", "User not found");
                     return new BasicException(BasicResponse.builder()
-                            // .error(error)
+                             .error(error)
                             .messageType(MessageType.ERROR)
                             .status(HttpStatus.NOT_FOUND)
                             .build());
@@ -160,7 +160,7 @@ public class UserService {
         if (isTaken) {
             BasicError error = BasicError.of("username", "Username is already taken by another user");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                    .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -179,7 +179,7 @@ public class UserService {
         if (isTaken) {
             BasicError error = BasicError.of("email", "Email is already taken by another user");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                     .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -199,7 +199,7 @@ public class UserService {
         if (isTaken) {
             BasicError error = BasicError.of("phone", "Phone number is already taken by another user");
             throw new BasicException(BasicResponse.builder()
-                    // .error(error)
+                    .error(error)
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.CONFLICT)
                     .build());
@@ -217,7 +217,7 @@ public class UserService {
         // Find user by id
         User user = userRepository.findById(id).orElseThrow(
                 () -> new BasicException(BasicResponse.builder()
-                        // .error(BasicError.of("id", "User not found"))
+                         .error(BasicError.of("id", "User not found"))
                         .messageType(MessageType.ERROR)
                         .status(HttpStatus.NOT_FOUND)
                         .build()));
@@ -244,7 +244,7 @@ public class UserService {
         // If there is an exception, throw a BasicException
         catch (Exception e) {
             throw new BasicException(BasicResponse.builder()
-                    // .error(BasicError.of("user", "User not updated in database"))
+                     .error(BasicError.of("user", "User not updated in database"))
                     .messageType(MessageType.ERROR)
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());

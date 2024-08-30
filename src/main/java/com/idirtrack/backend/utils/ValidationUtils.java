@@ -14,6 +14,7 @@ import com.idirtrack.backend.basics.BasicError;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
 
+
 public class ValidationUtils {
 
     public static ResponseEntity<BasicResponse> handleValidationErrors(BindingResult bindingResult) {
@@ -29,6 +30,7 @@ public class ValidationUtils {
         }
         return null;
     }
+
 
     /**
      * Extarct the error message from the BindingResult
