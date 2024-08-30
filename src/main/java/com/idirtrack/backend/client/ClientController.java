@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientRequest;
+import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 
@@ -256,6 +257,30 @@ public class ClientController {
         }
     }
 
+    //Update client info 
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+     @PutMapping("/{clientId}")
+    public ResponseEntity<MyResponse> updateClient(
+            @PathVariable Long clientId,
+            @RequestBody ClientUpdateRequest updateRequest) {
+        try {
+            MyResponse response = clientService.updateClient(clientId, updateRequest);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(MyResponse.builder()
+                            .message(e.getMessage())
+                            .status(HttpStatus.NOT_FOUND)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(MyResponse.builder()
+                            .message(e.getMessage())
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .build());
+        }
+    }
+
     //Filter clients by category and is active 
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter")
@@ -282,6 +307,8 @@ public class ClientController {
                         .content(totalClients)
                         .build());
     }
+
+
 
     // Get all categories with pagination and total count of clients
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")

@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.basics.BasicException;
+import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.UserService;
@@ -46,6 +47,9 @@ public class ClientServiceTest {
 
     @InjectMocks
     private ClientService clientService;
+
+    @Mock 
+    private ClientCategoryRepository clientCategoryRepository;
 
     private Client client;
     private User user;
@@ -164,6 +168,42 @@ public class ClientServiceTest {
         assertEquals(2, clients.size());
         assertEquals("Successfully filtered clients by category and status", response.getMessage());
         assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+     @Test
+    void updateClient_shouldUpdateClientSuccessfully() throws NotFoundException, BasicException {
+        // Arrange
+        Long clientId = 1L;
+        Client client = new Client();
+        client.setId(clientId);
+        User user = new User();
+        user.setId(2L);
+        client.setUser(user);
+
+        ClientUpdateRequest request = new ClientUpdateRequest();
+        request.setUsername("newUsername");
+        request.setName("New Name");
+        request.setEmail("newemail@example.com");
+        request.setPhone("123456789");
+        request.setCompany("New Company");
+        request.setCne("CNE123456");
+        request.setCategoryId(1L);
+        request.setPassword("newPassword");
+        request.setRemarque("Some remark");
+        request.setDisabled(true);
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+        when(clientCategoryRepository.findById(1L)).thenReturn(Optional.of(new ClientCategory()));
+
+        // Act
+        MyResponse response = clientService.updateClient(clientId, request);
+
+        // Assert
+        assertEquals("Client updated successfully", response.getMessage());
+        verify(userService).isUsernameTakenExcept(request.getUsername(), user.getId());
+        verify(userService).isEmailTakenExcept(request.getEmail(), user.getId());
+        verify(userService).isPhoneTakenExcept(request.getPhone(), user.getId());
+        verify(clientRepository).save(client);
     }
 
 
