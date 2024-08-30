@@ -27,7 +27,7 @@ public class TracCarSessionService {
     private static final Logger logger = LoggerFactory.getLogger(TracCarSessionService.class);
 
     public String createSession(String email, String password) {
-        String sessionEndpoint = url + "/session";
+        String sessionEndpoint = url + "/session/";
 
         // Create the request headers
         HttpHeaders headers = new HttpHeaders();

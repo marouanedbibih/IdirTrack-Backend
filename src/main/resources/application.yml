@@ -1,23 +1,22 @@
+server:
+  port: 8080
+
 spring:
-    application:
-      name: ${APP_NAME}
-    datasource:
-      driver-class-name: ${DB_DRIVER_CLASS_NAME}
-      url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}  
-    jpa:
-      hibernate:
-        ddl-auto: ${JPA_HIBERNATE_DDL_AUTO}
-      database: ${JPA_DATABASE}
-      database-platform: ${JPA_DATABASE_PLATFORM}
-  
+  application:
+    name: backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/idirtrack?createDatabaseIfNotExist=true&useSSL=false&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root@@0603
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
 traccar:
   api:
-    url: ${TRACCAR_API_URL}
-
-cors:
-  allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+    url: http://152.228.219.146:8082/api
 
 logging:
   level:
@@ -25,3 +24,6 @@ logging:
     hibernate: DEBUG
     security: DEBUG
     com.idirtrack: DEBUG
+
+cors:
+  allowed-origins: http://localhost:3000

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import com.idirtrack.backend.basics.BasicError;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
@@ -61,7 +62,7 @@ public class ManagerService {
                 }
                 // Throw an exception if the user could not be deleted from Traccar
                 throw new BasicException(BasicResponse.builder()
-                                // .error(BasicError.of("manager", "Failed to delete manager in Traccar"))
+                                .error(BasicError.of("manager", "Failed to delete manager in Traccar"))
                                 .messageType(MessageType.ERROR)
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .build());
@@ -111,7 +112,7 @@ public class ManagerService {
                 }
                 // Throw an exception if the user could not be updated in Traccar
                 throw new BasicException(BasicResponse.builder()
-                                // .error(BasicError.of("manager", "Failed to update manager in Traccar"))
+                               .error(BasicError.of("manager", "Failed to update manager in Traccar"))
                                 .messageType(MessageType.ERROR)
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .build());
@@ -166,7 +167,7 @@ public class ManagerService {
                 }
 
                 throw new BasicException(BasicResponse.builder()
-                                // .error(BasicError.of("manager", "Failed to create manager in Traccar"))
+                                .error(BasicError.of("manager", "Failed to create manager in Traccar"))
                                 .messageType(MessageType.ERROR)
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .build());
