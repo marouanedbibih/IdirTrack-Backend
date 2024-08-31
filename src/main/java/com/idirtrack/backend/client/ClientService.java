@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDto;
+import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 
@@ -378,5 +379,27 @@ public MyResponse updateClient(Long clientId, ClientUpdateRequest updateRequest)
           .status(HttpStatus.OK)
           .build();
 }
+
+//get client by id
+ public ClientInfoDTO getClientInfoById(Long id) throws NotFoundException {
+        Client client = clientRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Client not found with id: " + id));
+
+        return mapToClientInfoDTO(client);
+    }
+
+    private ClientInfoDTO mapToClientInfoDTO(Client client) {
+        return new ClientInfoDTO(
+            client.getUser().getUsername(),
+            client.getUser().getName(),
+            client.getUser().getEmail(),
+            client.getUser().getPhone(),
+            client.getCompany(),
+            client.getCne(),
+            client.getCategory() != null ? client.getCategory().getName() : null,
+            client.getRemarque(),
+            client.isDisabled()
+        );
+    }
 
 }

@@ -30,6 +30,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
+import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.AlreadyExistException;
@@ -187,6 +188,38 @@ public class ClientController {
                             .status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .message(e.getMessage())
                             .build());
+        }
+    }
+
+    // Get client by id
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/{id}")
+    public ResponseEntity<MyResponse> getClientById(@PathVariable Long id) {
+        try {
+            ClientInfoDTO clientInfo = clientService.getClientInfoById(id);
+            return ResponseEntity.ok(
+                MyResponse.builder()
+                    .data(clientInfo)
+                    .message("Client information retrieved successfully")
+                    .status(HttpStatus.OK)
+                    .build()
+            );
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(
+                    MyResponse.builder()
+                        .message("Client not found with id: " + id)
+                        .status(HttpStatus.NOT_FOUND)
+                        .build()
+                );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(
+                    MyResponse.builder()
+                        .message("An error occurred while retrieving the client information")
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .build()
+                );
         }
     }
 
