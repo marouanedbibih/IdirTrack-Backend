@@ -13,4 +13,9 @@ import lombok.NoArgsConstructor;
 public class ClientDto {
     private Long id;
     private UserDTO user;
+    private String company;
+    private String cne;
+    private boolean isDisabled;
+    private int totalVehicles;
+    private String category;
 }

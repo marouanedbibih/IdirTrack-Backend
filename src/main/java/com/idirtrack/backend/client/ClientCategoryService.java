@@ -23,42 +23,92 @@ public class ClientCategoryService {
   private final ClientRepository clientRepository;
   
 
-  public ClientCategory getClientCategoryById(Long id) throws NotFoundException {
-    return clientCategoryRepository.findById(id)
+  // Get ClientCategory by ID
+  public MyResponse getClientCategoryById(Long id) {
+    try {
+        ClientCategory clientCategory = clientCategoryRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Client category not found with id: " + id));
+        return MyResponse.builder()
+            .data(clientCategory)
+            .message("Client category retrieved successfully")
+            .status(HttpStatus.OK)
+            .build();
+    } catch (NotFoundException e) {
+        return MyResponse.builder()
+            .message(e.getMessage())
+            .status(HttpStatus.NOT_FOUND)
+            .build();
+    }
 }
 
 
 // Create a new ClientCategory
-public ClientCategory createClientCategory(ClientCategory clientCategory) throws AlreadyExistException {
-  if (clientCategoryRepository.existsByName(clientCategory.getName())) {
-      throw new AlreadyExistException("Category name must be unique");
+public MyResponse createClientCategory(ClientCategory clientCategory) {
+  try {
+      if (clientCategoryRepository.existsByName(clientCategory.getName())) {
+          throw new AlreadyExistException("Category name must be unique");
+      }
+      ClientCategory savedCategory = clientCategoryRepository.save(clientCategory);
+      return MyResponse.builder()
+          .data(savedCategory)
+          .message("Client category created successfully")
+          .status(HttpStatus.CREATED)
+          .build();
+  } catch (AlreadyExistException e) {
+      return MyResponse.builder()
+          .message(e.getMessage())
+          .status(HttpStatus.CONFLICT)
+          .build();
   }
-  return clientCategoryRepository.save(clientCategory);
 }
 
 // Update an existing ClientCategory
-public ClientCategory updateClientCategory(Long id, ClientCategory clientCategoryDetails) throws NotFoundException, AlreadyExistException {
-  ClientCategory clientCategory = getClientCategoryById(id);
+public MyResponse updateClientCategory(Long id, ClientCategory clientCategoryDetails) {
+  try {
+      ClientCategory clientCategory = getClientCategoryByIdInternal(id);
 
-  // Check for name uniqueness only if the name has changed
-  if (!clientCategory.getName().equals(clientCategoryDetails.getName()) &&
-      clientCategoryRepository.existsByName(clientCategoryDetails.getName())) {
-      throw new AlreadyExistException("Category name must be unique");
+      if (!clientCategory.getName().equals(clientCategoryDetails.getName()) &&
+          clientCategoryRepository.existsByName(clientCategoryDetails.getName())) {
+          throw new AlreadyExistException("Category name must be unique");
+      }
+
+      clientCategory.setName(clientCategoryDetails.getName());
+      ClientCategory updatedCategory = clientCategoryRepository.save(clientCategory);
+
+      return MyResponse.builder()
+          .data(updatedCategory)
+          .message("Client category updated successfully")
+          .status(HttpStatus.OK)
+          .build();
+  } catch (NotFoundException | AlreadyExistException e) {
+      return MyResponse.builder()
+          .message(e.getMessage())
+          .status(e instanceof NotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT)
+          .build();
   }
-
-  clientCategory.setName(clientCategoryDetails.getName());
-  // Update other fields if necessary
-
-  return clientCategoryRepository.save(clientCategory);
-
 }
 
-  public void deleteClientCategory(Long id) throws NotFoundException {
-    ClientCategory clientCategory = clientCategoryRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Client category not found with id: " + id));
-    clientCategoryRepository.delete(clientCategory);
-  }
+  // Delete a ClientCategory
+  public MyResponse deleteClientCategory(Long id) {
+    try {
+        ClientCategory clientCategory = getClientCategoryByIdInternal(id);
+        clientCategoryRepository.delete(clientCategory);
+        return MyResponse.builder()
+            .message("Client category deleted successfully")
+            .status(HttpStatus.OK)
+            .build();
+    } catch (NotFoundException e) {
+        return MyResponse.builder()
+            .message(e.getMessage())
+            .status(HttpStatus.NOT_FOUND)
+            .build();
+    }
+}
+// Helper method to retrieve a ClientCategory by ID and throw NotFoundException if not found
+private ClientCategory getClientCategoryByIdInternal(Long id) throws NotFoundException {
+  return clientCategoryRepository.findById(id)
+      .orElseThrow(() -> new NotFoundException("Client category not found with id: " + id));
+}
 
   //get all categories with pagination and total count
   public MyResponse getCategoriesWithClientCount(int page, int size) {
