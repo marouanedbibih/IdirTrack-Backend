@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,10 +93,11 @@ public class BoitierController {
     @DeleteMapping("/{id}/")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> deleteBoitier(
+        @RequestHeader("Authorization") String authHeader,
             @PathVariable Long id,
             @RequestParam(required = true, defaultValue = "false") boolean isLost) {
         try {
-            MyResponse response = boitierService.deleteBoitierById(id, isLost);
+            MyResponse response = boitierService.deleteBoitierById(id, isLost,authHeader);
             return ResponseEntity.status(response.getStatus()).body(response);
         } catch (NotFoundException ex) {
             return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());

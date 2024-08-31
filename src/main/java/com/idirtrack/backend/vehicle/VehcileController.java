@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,10 +53,12 @@ public class VehcileController {
 
     // Endpoint to delete a vehicle
     @DeleteMapping("/{vehicleId}/")
-    public ResponseEntity<?> deleteVehicle(@PathVariable Long vehicleId,
+    public ResponseEntity<?> deleteVehicle(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long vehicleId,
             @RequestParam(defaultValue = "false") boolean isLost) {
         try {
-            MyResponse response = vehicleService.deleteVehicle(vehicleId, isLost);
+            MyResponse response = vehicleService.deleteVehicle(vehicleId, isLost, authHeader);
             return ResponseEntity.status(response.getStatus()).body(response);
         } catch (NotFoundException ex) {
             return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
@@ -70,12 +73,13 @@ public class VehcileController {
     @PutMapping("/{vehicleId}/")
     public ResponseEntity<?> updateVehicle(@PathVariable Long vehicleId,
             @Valid @RequestBody UpdateVehicleRequest request,
+            @RequestHeader("Authorization") String authHeader,
             BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return RequestValidation.handleValidationErrors(bindingResult);
         } else {
             try {
-                MyResponse response = vehicleService.updateVehicle(vehicleId, request);
+                MyResponse response = vehicleService.updateVehicle(vehicleId, request, authHeader);
                 return ResponseEntity.status(response.getStatus()).body(response);
             } catch (NotFoundException ex) {
                 return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
@@ -93,13 +97,15 @@ public class VehcileController {
 
     // Create a new vehicle
     @PostMapping("/")
-    public ResponseEntity<?> createNewVehicle(@Valid @RequestBody VehicleRequest request,
-            BindingResult bindingResult) {
+    public ResponseEntity<?> createNewVehicle(
+            @Valid @RequestBody VehicleRequest request,
+            BindingResult bindingResult,
+            @RequestHeader("Authorization") String authHeader) {
         if (bindingResult.hasErrors()) {
             return RequestValidation.handleValidationErrors(bindingResult);
         } else {
             try {
-                MyResponse response = vehicleService.createNewVehicle(request);
+                MyResponse response = vehicleService.createNewVehicle(request, authHeader);
                 return ResponseEntity.status(response.getStatus()).body(response);
             } catch (AlreadyExistException ex) {
                 return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());

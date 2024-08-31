@@ -4,139 +4,93 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.idirtrack.backend.traccar.dto.TCRDeviceRequest;
+import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.traccar.request.TracCarDeviceRequest;
+import com.idirtrack.backend.utils.TraccarUtils;
 
 import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class TracCarService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TracCarService.class);
+
     private final RestTemplate restTemplate;
+    private final TraccarUtils traccarUtils;
+    private final JwtUtils jwtUtils;
+
     @Value("${traccar.api.url}")
     private String traccarUrl;
 
-    private static final Logger logger = LoggerFactory.getLogger(TracCarService.class);
-
-    public Long createDevice(String clientName, String imei, String clientCompany, String vehicleMatricule) {
+    // Create a device in Traccar
+    public Long createDevice(TracCarDeviceRequest request, String authHeader) {
         String url = traccarUrl + "/devices";
-
-        String name = clientName + " - " + clientCompany + " - " + vehicleMatricule;
-
-        // Create the request body
-        TracCarDeviceRequest request = TracCarDeviceRequest.builder()
-                .name(name)
-                .uniqueId(imei)
-                .build();
-
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // add basic auth with username and password idirtech idirtech
-        headers.setBasicAuth("idirtech ", "idirtech1");
-
-        // Create the HttpEntity
+        String token = jwtUtils.extractToken(authHeader);
+        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
         HttpEntity<TracCarDeviceRequest> entity = new HttpEntity<>(request, headers);
 
-        // Send the POST request
-        // Send the POST request and handle the response
         try {
-            // Send the request and get the response as a Map
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
             if (response != null && response.containsKey("id")) {
-                // Extract and return the ID from the response
-                logger.debug("Device created successfully: {}", response);
                 Long traccarId = Long.parseLong(response.get("id").toString());
-                logger.debug("Device TracCar ID: {}", traccarId);
+                logger.debug("Device created successfully: {}", response);
                 return traccarId;
             } else {
                 logger.debug("Error: Received null or invalid response from Traccar");
                 return null;
             }
         } catch (Exception e) {
-            logger.error("Error creating device: " + e.getMessage());
+            logger.error("Error creating device: {}", e.getMessage());
             return null;
         }
     }
 
-    public Long updateDevice(TCRDeviceRequest tcrDevice) {
-        String url = traccarUrl + "/devices/" + tcrDevice.getTraccarId();
-
-        String name = tcrDevice.getClientName() + " - " + tcrDevice.getClientCompany() + " - "
-                + tcrDevice.getVehicleMatricule();
-
-        // Create the request body
-        TracCarDeviceRequest request = TracCarDeviceRequest.builder()
-                .name(name)
-                .uniqueId(tcrDevice.getImei())
-                .build();
-
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // add basic auth with username and password idirtech idirtech
-        headers.setBasicAuth("idirtech ", "idirtech1");
-
-        // Create the HttpEntity
+    // Update a device in Traccar
+    public Long updateDevice(TracCarDeviceRequest request, String authHeader, Long id) {
+        String url = traccarUrl + "/devices/" + id;
+        String token = jwtUtils.extractToken(authHeader);
+        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
         HttpEntity<TracCarDeviceRequest> entity = new HttpEntity<>(request, headers);
 
-        // Send the POST request
-        // Send the POST request and handle the response
         try {
-            // Send the request and get the response as a Map
             Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
             if (response != null && response.containsKey("id")) {
-                // Extract and return the ID from the response
-                logger.debug("Device created successfully: {}", response);
                 Long traccarId = Long.parseLong(response.get("id").toString());
-                logger.debug("Device TracCar ID: {}", traccarId);
+                logger.debug("Device updated successfully: {}", response);
                 return traccarId;
             } else {
                 logger.debug("Error: Received null or invalid response from Traccar");
                 return null;
             }
         } catch (Exception e) {
-            logger.error("Error creating device: " + e.getMessage());
+            logger.error("Error updating device: {}", e.getMessage());
             return null;
         }
     }
 
-    public boolean deleteDevice(Long traccarId) {
+    // Delete a device in Traccar
+    public boolean deleteDevice(Long traccarId, String authHeader) {
         String url = traccarUrl + "/devices/" + traccarId;
-
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth("idirtech", "idirtech1");
-
-        // Create the HttpEntity with the headers only (no body is needed for DELETE)
+        String token = jwtUtils.extractToken(authHeader);
+        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {
-            // Send the DELETE request
             ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
-
-            // Check if the response status code indicates success (204 No Content is
-            // expected for a successful delete)
             if (response.getStatusCode().is2xxSuccessful()) {
                 logger.debug("Device deleted successfully with ID: {}", traccarId);
                 return true;
             } else {
-                logger.debug("Failed to delete device with ID: {}. Status code: {}", traccarId,
-                        response.getStatusCode());
+                logger.debug("Failed to delete device with ID: {}. Status code: {}", traccarId, response.getStatusCode());
                 return false;
             }
         } catch (Exception e) {
@@ -144,5 +98,4 @@ public class TracCarService {
             return false;
         }
     }
-
 }

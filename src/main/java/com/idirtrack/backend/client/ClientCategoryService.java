@@ -123,7 +123,7 @@ private ClientCategory getClientCategoryByIdInternal(Long id) throws NotFoundExc
         Map<String, Object> metadata = Map.of(
             "totalPages", categories.getTotalPages(),
             "totalElements", categories.getTotalElements(),
-            "currentPage", categories.getNumber(),
+            "currentPage", categories.getNumber() + 1,
             "size", categories.getSize()
         );
 

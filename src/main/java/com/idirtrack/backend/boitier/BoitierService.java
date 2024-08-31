@@ -212,7 +212,7 @@ public class BoitierService {
          */
 
         @Transactional
-        public MyResponse deleteBoitierById(Long id, boolean isLost) throws NotFoundException {
+        public MyResponse deleteBoitierById(Long id, boolean isLost,String authHeader) throws NotFoundException {
 
                 // Find the boitier by id
                 Boitier boitier = boitierRepository.findById(id)
@@ -222,7 +222,7 @@ public class BoitierService {
                                                 .build()));
                 Long traccarId = boitier.getTraccarId();
                 if (boitier.getVehicle() != null) {
-                        tracCarService.deleteDevice(traccarId);
+                        tracCarService.deleteDevice(traccarId, authHeader);
                 }
                 // Delete the subscriptions
                 subscriptionRepository.deleteAll(boitier.getSubscriptions());
