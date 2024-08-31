@@ -31,6 +31,7 @@ import com.idirtrack.backend.sim.SimService;
 import com.idirtrack.backend.subscription.SubscriptionDTO;
 import com.idirtrack.backend.subscription.SubscriptionRepository;
 import com.idirtrack.backend.traccar.TracCarService;
+import com.idirtrack.backend.traccar.request.TracCarDeviceRequest;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.FieldErrorDTO;
 import com.idirtrack.backend.utils.MyResponse;
@@ -58,12 +59,13 @@ public class VehicleService {
 
         // Delete a vehicle
         @Transactional
-        public MyResponse deleteVehicle(Long vehicleId, boolean isLost) throws NotFoundException, MyException {
+        public MyResponse deleteVehicle(Long vehicleId, boolean isLost, String authHeader)
+                        throws NotFoundException, MyException {
                 // Find the vehicle by ID
                 Vehicle vehicle = this.findVehicleById(vehicleId);
                 // Delete the vehicle's boitiers from Traccar
                 for (Boitier boitier : vehicle.getBoitiers()) {
-                        boolean isBoitierDeleted = tracCarService.deleteDevice(boitier.getTraccarId());
+                        boolean isBoitierDeleted = tracCarService.deleteDevice(boitier.getTraccarId(), authHeader);
                         if (!isBoitierDeleted) {
                                 throw new MyException(ErrorResponse.builder()
                                                 .message("Error while deleting the device from the TracCar microservice")
@@ -98,7 +100,7 @@ public class VehicleService {
 
         // Update exting vehicle
         @Transactional
-        public MyResponse updateVehicle(Long id, UpdateVehicleRequest request)
+        public MyResponse updateVehicle(Long id, UpdateVehicleRequest request, String authHeader)
                         throws NotFoundException, MyException, AlreadyExistException {
                 // Find the vehicle by ID
                 Vehicle vehicle = this.findVehicleById(id);
@@ -113,6 +115,22 @@ public class VehicleService {
                 // Save the vehicle
                 vehicle = vehicleRepository.save(vehicle);
                 // Update vehicle's boitiers in Traccar
+                for (Boitier boitier : vehicle.getBoitiers()) {
+                        TracCarDeviceRequest deviceRequest = TracCarDeviceRequest.builder()
+                                        .name(vehicle.getMatricule())
+                                        .uniqueId(boitier.getDevice().getImei())
+                                        .phone(boitier.getSim().getPhone())
+                                        .expirationTime(boitier.getSubscriptions()
+                                                        .get(boitier.getSubscriptions().size() - 1).getEndDate())
+                                        .build();
+                        Long traccarId = tracCarService.updateDevice(deviceRequest, authHeader, boitier.getTraccarId());
+                        if (traccarId == null) {
+                                throw new MyException(ErrorResponse.builder()
+                                                .message("Error while updating the device in the TracCar microservice")
+                                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                                .build());
+                        }
+                }
                 // Return the response
                 return MyResponse.builder()
                                 .message("Vehicle updated successfully")
@@ -121,15 +139,13 @@ public class VehicleService {
         }
 
         @Transactional
-        public MyResponse createNewVehicle(VehicleRequest request)
+        public MyResponse createNewVehicle(VehicleRequest request, String authHeader)
                         throws AlreadyExistException, MyException, NotFoundException {
 
                 // Verify if the vehicle does not already exist by matricule
                 this.checkIfVehicleExists(request.getMatricule());
-
                 // Find the client by clientId
                 Client client = clientService.findClientById(request.getClientId());
-
                 // Find and verify the boitiers by boitiersIds
                 List<Boitier> boitiers = new ArrayList<>();
                 for (Long boitierId : request.getBoitiersIds()) {
@@ -159,11 +175,14 @@ public class VehicleService {
 
                 // Save the Boitiers in TracCar Microservice
                 for (Boitier boitier : boitiers) {
-                        Long traccarId = tracCarService.createDevice(
-                                        client.getUser().getName(),
-                                        boitier.getDevice().getImei(),
-                                        client.getCompany(),
-                                        request.getMatricule());
+                        TracCarDeviceRequest deviceRequest = TracCarDeviceRequest.builder()
+                                        .name(request.getMatricule())
+                                        .uniqueId(boitier.getDevice().getImei())
+                                        .phone(boitier.getSim().getPhone())
+                                        .expirationTime(boitier.getSubscriptions()
+                                                        .get(boitier.getSubscriptions().size() - 1).getEndDate())
+                                        .build();
+                        Long traccarId = tracCarService.createDevice(deviceRequest, authHeader);
 
                         if (traccarId == null) { // Corrected condition check
                                 throw new MyException(ErrorResponse.builder()
@@ -395,7 +414,7 @@ public class VehicleService {
                                         .message("No vehicles found")
                                         .status(HttpStatus.NO_CONTENT)
                                         .build();
-                } else{
+                } else {
                         // Build the DTO of vehicle resppnse
                         List<VehicleResponse> vehiclesDTO = vehiclesPage.getContent().stream()
                                         .map(vehicle -> {
