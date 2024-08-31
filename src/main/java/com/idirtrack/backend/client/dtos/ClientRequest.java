@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 @Builder
@@ -32,8 +33,15 @@ public class ClientRequest {
     private String email;
 
     @NotBlank(message = "Phone number is mandatory")
-   
     private String phone;
     
+    private String cne;
+
+    @NotNull(message = "Category ID is mandatory")
+    private Long categoryId;
+
+    private boolean isDisabled;
     
+    @Size(max = 250, message = "Remarque must be less than 250 characters")
+    private String remarque;
 }

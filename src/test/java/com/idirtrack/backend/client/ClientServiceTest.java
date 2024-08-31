@@ -29,18 +29,25 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.basics.BasicException;
+import com.idirtrack.backend.basics.BasicResponse;
+import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.client.dtos.ClientInfoDTO;
+import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.UserService;
 import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.user.User;
+import com.idirtrack.backend.user.UserDTO;
+import com.idirtrack.backend.user.UserRole;
 
 
 public class ClientServiceTest {
    @Mock
     private ClientRepository clientRepository;
+
+  
 
     @Mock
     private UserService userService;
@@ -71,6 +78,99 @@ public class ClientServiceTest {
                 .id(1L)
                 .user(user)
                 .build();
+    }
+
+    //createClient
+    @Test
+    void createClient_shouldCreateClient_whenValidRequest() throws BasicException {
+        // Arrange
+        ClientRequest clientRequest = ClientRequest.builder()
+                .username("john_doe")
+                .password("StrongPassword123")
+                .name("John Doe")
+                .email("john.doe@example.com")
+                .phone("1234567890")
+                .cne("CNE123456")
+                .categoryId(1L)
+                .isDisabled(false)
+                .remarque("This is a remark about the client.")
+                .build();
+    
+        UserDTO userDTO = UserDTO.builder()
+                .username(clientRequest.getUsername())
+                .name(clientRequest.getName())
+                .email(clientRequest.getEmail())
+                .phone(clientRequest.getPhone())
+                .password(clientRequest.getPassword())
+                .role(UserRole.CLIENT)
+                .build();
+    
+        Map<String, Object> traccarResponse = Map.of("id", 123L);
+    
+        // Mocking the necessary service and repository calls
+        when(userService.isUsernameTaken(clientRequest.getUsername())).thenReturn(false);
+        when(userService.isEmailTaken(clientRequest.getEmail())).thenReturn(false);
+        when(userService.isPhoneTaken(clientRequest.getPhone())).thenReturn(false);
+        when(traccarUserService.createUser(any(UserDTO.class), any(UserRole.class), anyString())).thenReturn(traccarResponse);
+        when(userService.createNewUserInDB(any(UserDTO.class))).thenReturn(new User());
+    
+        // Mocking the category lookup
+        ClientCategory clientCategory = new ClientCategory();
+        clientCategory.setId(1L);
+        clientCategory.setName("Valid Category");
+        when(clientCategoryRepository.findById(1L)).thenReturn(Optional.of(clientCategory));
+    
+        // Act
+        BasicResponse response = clientService.createClient(clientRequest, "dummyToken");
+    
+        // Assert
+        assertEquals(HttpStatus.CREATED, response.getStatus());
+        assertEquals("Client created successfully", response.getMessage());
+    
+        verify(userService, times(1)).isUsernameTaken(clientRequest.getUsername());
+        verify(userService, times(1)).isEmailTaken(clientRequest.getEmail());
+        verify(userService, times(1)).isPhoneTaken(clientRequest.getPhone());
+        verify(traccarUserService, times(1)).createUser(any(UserDTO.class), any(UserRole.class), anyString());
+        verify(userService, times(1)).createNewUserInDB(any(UserDTO.class));
+        verify(clientRepository, times(1)).save(any(Client.class));
+        verify(clientCategoryRepository, times(1)).findById(1L); // Verifying that the category lookup was performed
+    }
+
+    @Test
+    void createClient_shouldThrowException_whenUsernameTaken() throws BasicException {
+        // Arrange
+        ClientRequest clientRequest = ClientRequest.builder()
+                .username("john_doe")
+                .password("StrongPassword123")
+                .name("John Doe")
+                .email("john.doe@example.com")
+                .phone("1234567890")
+                .cne("CNE123456")
+                .categoryId(1L)
+                .isDisabled(false)
+                .remarque("This is a remark about the client.")
+                .build();
+
+        when(userService.isUsernameTaken(clientRequest.getUsername())).thenThrow(new BasicException(BasicResponse.builder()
+                .messageType(MessageType.ERROR)
+                .status(HttpStatus.CONFLICT)
+                .message("Username is already taken")
+                .build()));
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            clientService.createClient(clientRequest, "dummyToken");
+        });
+
+        assertEquals(HttpStatus.CONFLICT, exception.getResponse().getStatus());
+        assertEquals("Username is already taken", exception.getResponse().getMessage());
+
+        verify(userService, times(1)).isUsernameTaken(clientRequest.getUsername());
+        verify(userService, never()).isEmailTaken(anyString());
+        verify(userService, never()).isPhoneTaken(anyString());
+        verify(traccarUserService, never()).createUser(any(UserDTO.class), any(UserRole.class), anyString());
+        verify(userService, never()).createNewUserInDB(any(UserDTO.class));
+        verify(clientRepository, never()).save(any(Client.class));
     }
 
      @Test

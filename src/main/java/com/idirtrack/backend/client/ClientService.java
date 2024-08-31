@@ -159,51 +159,63 @@ public class ClientService {
          * @throws BasicException
          */
         @Transactional
-        public BasicResponse createClient(ClientRequest clientRequest, String token) throws BasicException {
-                // Get the user from the request
-                userService.isUsernameTaken(clientRequest.getUsername());
-                userService.isEmailTaken(clientRequest.getEmail());
-                userService.isPhoneTaken(clientRequest.getPhone());
+public BasicResponse createClient(ClientRequest clientRequest, String token) throws BasicException {
+    // Validate unique constraints
+    userService.isUsernameTaken(clientRequest.getUsername());
+    userService.isEmailTaken(clientRequest.getEmail());
+    userService.isPhoneTaken(clientRequest.getPhone());
 
-                // Build the user DTO
-                UserDTO userDTO = UserDTO.builder()
-                                .username(clientRequest.getUsername())
-                                .name(clientRequest.getName())
-                                .email(clientRequest.getEmail())
-                                .phone(clientRequest.getPhone())
-                                .password(clientRequest.getPassword())
-                                .role(UserRole.CLIENT)
-                                .build();
+    // Verify category exists
+    ClientCategory category = clientCategoryRepository.findById(clientRequest.getCategoryId())
+            .orElseThrow(() -> new BasicException(BasicResponse.builder()
+                    .message("Category not found with id: " + clientRequest.getCategoryId())
+                    .status(HttpStatus.NOT_FOUND)
+                    .messageType(MessageType.ERROR)
+                    .build()));
 
-                // Save the user in Traccar
-                Map<String, Object> clientTracCar = traccarUserService.createUser(userDTO, UserRole.CLIENT, token);
-                if (clientTracCar != null) {
-                        // Get ID from response
-                        Long id = Long.parseLong(clientTracCar.get("id").toString());
-                        userDTO.setTraccarId(id);
-                        // Save user in database
-                        User user = userService.createNewUserInDB(userDTO);
+    // Build the user DTO
+    UserDTO userDTO = UserDTO.builder()
+            .username(clientRequest.getUsername())
+            .name(clientRequest.getName())
+            .email(clientRequest.getEmail())
+            .phone(clientRequest.getPhone())
+            .password(clientRequest.getPassword())
+            .role(UserRole.CLIENT)
+            .build();
 
-                        // Save client in database
-                        Client client = Client.builder()
-                                        .user(user)
-                                        .build();
-                        client = clientRepository.save(client);
+    // Save the user in Traccar
+    Map<String, Object> clientTracCar = traccarUserService.createUser(userDTO, UserRole.CLIENT, token);
+    if (clientTracCar != null) {
+        // Get ID from response
+        Long traccarId = Long.parseLong(clientTracCar.get("id").toString());
+        userDTO.setTraccarId(traccarId);
 
-                        // Return a success response
-                        return BasicResponse.builder()
-                                        .message("Client created successfully")
-                                        .status(HttpStatus.CREATED)
-                                        .build();
-                }
+        // Save user in database
+        User user = userService.createNewUserInDB(userDTO);
 
-                throw new BasicException(BasicResponse.builder()
-                                // .error(BasicError.of("client", "Failed to create manager in Traccar"))
-                                .messageType(MessageType.ERROR)
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .build());
-        }
+        // Save client in database
+        Client client = Client.builder()
+                .user(user)
+                .cne(clientRequest.getCne())
+                .category(category)
+                .isDisabled(clientRequest.isDisabled())
+                .remarque(clientRequest.getRemarque())
+                .build();
+        client = clientRepository.save(client);
 
+        // Return a success response
+        return BasicResponse.builder()
+                .message("Client created successfully")
+                .status(HttpStatus.CREATED)
+                .build();
+    }
+
+    throw new BasicException(BasicResponse.builder()
+            .messageType(MessageType.ERROR)
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .message("Failed to create client in Traccar")
+            .build());
+}
         // search clients
         public BasicResponse searchClients(String keyword, int page, int size) throws BasicException {
                 // Create page request

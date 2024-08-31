@@ -65,19 +65,19 @@ public class ClientController {
             @RequestBody @Valid ClientRequest clientRequest,
             BindingResult bindingResult,
             @RequestHeader("Authorization") String token) {
-
-        // // Validate the request
+    
+        // Validate the request
         if (bindingResult.hasErrors()) {
             return ValidationUtils.handleValidationErrors(bindingResult);
         }
-
+    
         try {
             // Remove "Bearer " from the token and trim any spaces
             String jwtToken = token.replace("Bearer ", "").trim();
-
-            // Call the service to create the manager
+    
+            // Call the service to create the client
             BasicResponse response = clientService.createClient(clientRequest, jwtToken);
-
+    
             // Extract the session from the JWT token
             String session = jwtUtils.extractSession(jwtToken);
             // Create a ResponseCookie with the session ID
@@ -85,37 +85,12 @@ public class ClientController {
                     .httpOnly(true)
                     .path("/")
                     .build();
-            // print the session cookie
-            System.out.println("hanaaaa " + sessionCookie);
-            // // Return the response with the session cookie in the headers
+    
+            // Return the response with the session cookie in the headers
             return ResponseEntity.status(response.getStatus())
                     .header("Set-Cookie", sessionCookie.toString())
                     .body(response);
-
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse
-                            .builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
-        }
-    }
-
-    // get all clients with pagination
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/")
-    public ResponseEntity<BasicResponse> getAllClients(
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "5") int size,
-            @RequestHeader("Authorization") String token) {
-        try {
-            BasicResponse response = clientService.getAllClients(page, size);
-            return ResponseEntity.status(response.getStatus()).body(response);
-
+    
         } catch (BasicException e) {
             return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
         } catch (Exception e) {
