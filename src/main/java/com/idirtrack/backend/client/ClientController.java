@@ -104,6 +104,30 @@ public class ClientController {
         }
     }
 
+    // get all clients with pagination
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/")
+    public ResponseEntity<BasicResponse> getAllClients(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size,
+            @RequestHeader("Authorization") String token) {
+        try {
+            BasicResponse response = clientService.getAllClients(page, size);
+            return ResponseEntity.status(response.getStatus()).body(response);
+
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse
+                            .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
+        }
+    }
+
     // search clients
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/search")
