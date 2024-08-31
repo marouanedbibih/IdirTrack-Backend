@@ -25,7 +25,11 @@ import com.idirtrack.backend.utils.ValidationUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+
+import com.idirtrack.backend.client.dtos.ClientCategoryDto;
+import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
+import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
 
@@ -182,9 +186,143 @@ public class ClientController {
         }
     }
 
-    // Get total number of clients
+
+    // Get client by id
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/total")
+    @GetMapping("/{id}")
+    public ResponseEntity<MyResponse> getClientById(@PathVariable Long id) {
+        try {
+            ClientInfoDTO clientInfo = clientService.getClientInfoById(id);
+            return ResponseEntity.ok(
+                    MyResponse.builder()
+                            .data(clientInfo)
+                            .message("Client information retrieved successfully")
+                            .status(HttpStatus.OK)
+                            .build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(
+                            MyResponse.builder()
+                                    .message("Client not found with id: " + id)
+                                    .status(HttpStatus.NOT_FOUND)
+                                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(
+                            MyResponse.builder()
+                                    .message("An error occurred while retrieving the client information")
+                                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                    .build());
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/categories/{id}")
+    public ResponseEntity<ClientCategory> getClientCategoryById(@PathVariable Long id) {
+        try {
+            ClientCategory clientCategory = categoryService.getClientCategoryById(id);
+            return ResponseEntity.ok(clientCategory);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PostMapping("/categories/")
+    public ResponseEntity<BasicResponse> createClientCategory(@RequestBody @Valid ClientCategory clientCategory) {
+        try {
+            categoryService.createClientCategory(clientCategory);
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    BasicResponse.builder().message("Category created successfully").status(HttpStatus.CREATED)
+                            .build());
+        } catch (AlreadyExistException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<BasicResponse> updateClientCategory(@PathVariable Long id,
+            @RequestBody @Valid ClientCategory clientCategoryDetails) {
+        try {
+            categoryService.updateClientCategory(id, clientCategoryDetails);
+            return ResponseEntity.ok(
+                    BasicResponse.builder().message("Category updated successfully").status(HttpStatus.OK).build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.NOT_FOUND).build());
+        } catch (AlreadyExistException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<BasicResponse> deleteClientCategory(@PathVariable Long id) {
+        try {
+            categoryService.deleteClientCategory(id);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(BasicResponse.builder()
+                            .message("Client category deleted successfully")
+                            .status(HttpStatus.OK)
+                            .build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BasicResponse.builder()
+                            .message("Client category not found with id: " + id)
+                            .status(HttpStatus.NOT_FOUND)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
+        }
+    }
+
+    // Update client info
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PutMapping("/{clientId}")
+    public ResponseEntity<MyResponse> updateClient(
+            @PathVariable Long clientId,
+            @RequestBody ClientUpdateRequest updateRequest) {
+        try {
+            MyResponse response = clientService.updateClient(clientId, updateRequest);
+            return ResponseEntity.status(response.getStatus()).body(response);
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(MyResponse.builder()
+                            .message(e.getMessage())
+                            .status(HttpStatus.NOT_FOUND)
+                            .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(MyResponse.builder()
+                            .message(e.getMessage())
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .build());
+        }
+    }
+
+    // Filter clients by category and is active
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/filter")
+    public ResponseEntity<MyResponse> filterClientsByCategoryAndStatus(
+            @RequestParam Long categoryId,
+            @RequestParam boolean isDisabled,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        MyResponse response = clientService.filterClientsByCategoryAndStatus(categoryId, isDisabled, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    // Get total number of clients
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")@GetMapping("/total")
+
     public ResponseEntity<BasicResponse> getTotalClients() {
         long totalClients = clientService.getTotalClients();
         return ResponseEntity.status(HttpStatus.OK)
@@ -194,4 +332,13 @@ public class ClientController {
                         .content(totalClients)
                         .build());
     }
+
+    // get count of clients active and inactive
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/statistics/account/")
+    public ResponseEntity<MyResponse> getActiveAndInactiveClientCount() {
+        MyResponse response = clientService.getActiveAndInactiveClientCount();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }
+
