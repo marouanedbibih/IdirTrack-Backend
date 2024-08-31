@@ -36,6 +36,8 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDto;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 
@@ -124,6 +126,11 @@ public class ClientService {
                                         return ClientDto.builder()
                                                         .id(client.getId())
                                                         .user(userDto)
+                                                        .company(client.getCompany())
+                                                        .cne(client.getCne())
+                                                        .isDisabled(client.isDisabled())
+                                                        .totalVehicles(client.getVehicles().size())
+                                                        .category(client.getCategory().getName())
                                                         .build();
                                 }).collect(Collectors.toList());
                 // Build the metadata
@@ -244,6 +251,41 @@ public class ClientService {
                                 .metadata(metaData)
                                 .status(HttpStatus.OK)
                                 .build();
+        }
+
+        // delete client
+
+        /**
+         * Service to delete a client
+         * 
+         * @param id
+         * @param token
+         * @throws BasicException
+         */
+
+        @Transactional
+        public void deleteClient(Long id, String token) throws BasicException, NotFoundException {
+                // Find the client by ID or throw a NotFoundException if not found
+                Client client = clientRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
+                                                .message("Client not found with id: " + id)
+                                                .build()));
+
+                // Remove the client from Traccar if the client has a Traccar ID
+                if (client.getUser().getTraccarId() != null) {
+                        traccarUserService.deleteUser(client.getUser().getTraccarId(), token);
+                }
+
+                // Remove the user associated with the client
+                userService.deleteUser(client.getUser().getId());
+
+                // Delete the client from the database
+                clientRepository.delete(client);
+        }
+
+        // get total clients
+        public long getTotalClients() {
+                return clientRepository.count();
         }
 
 }

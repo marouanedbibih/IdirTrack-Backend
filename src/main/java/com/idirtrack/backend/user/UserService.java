@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
+import com.idirtrack.backend.errors.NotFoundException;
+import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.basics.BasicError;
 
 import lombok.RequiredArgsConstructor;
@@ -80,6 +82,16 @@ public class UserService {
         }
         // Save the user
         return userRepository.save(user);
+    }
+
+    //delete user
+    public void deleteUser(Long userId) throws NotFoundException {
+        // Find the user by ID or throw a NotFoundException if not found
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
+                        .message("User not found with id: " + userId)
+                        .build()));
+        userRepository.delete(user);
     }
 
     /**

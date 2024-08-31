@@ -3,7 +3,6 @@ package com.idirtrack.backend.client;
 import com.idirtrack.backend.staff.Staff;
 import com.idirtrack.backend.user.User;
 
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -18,6 +17,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import com.idirtrack.backend.utils.BasicEntity;
+import com.idirtrack.backend.vehicle.Vehicle;
+
 import java.util.List;
 
 @Entity
@@ -27,29 +28,33 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Client  extends BasicEntity{
+public class Client extends BasicEntity {
 
-  //company
+  // company
   private String company;
-  //cne
+  // cne
   private String cne;
-  //remarque
+  // remarque
   private String remarque;
-  //isDisabled
+  // isDisabled
   private boolean isDisabled;
 
-  //category
+  // category
   @ManyToOne
   @JoinColumn(name = "category_id")
   private ClientCategory category;
 
-  //user
-    @OneToOne
-    @JoinColumn(name = "user_id")
-    @ToString.Exclude
-    private User user;
+  // user
+  @OneToOne
+  @JoinColumn(name = "user_id")
+  @ToString.Exclude
+  private User user;
 
-    //staff
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Staff> staff;
+  // staff
+  @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Staff> staff;
+
+  // vehicles
+  @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Vehicle> vehicles;
 }

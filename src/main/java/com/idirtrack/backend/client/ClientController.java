@@ -5,8 +5,11 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,20 +18,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.utils.ValidationUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
 import com.idirtrack.backend.client.dtos.ClientRequest;
+import com.idirtrack.backend.errors.AlreadyExistException;
+import com.idirtrack.backend.errors.NotFoundException;
 
 @RestController
 @RequestMapping("/api/client")
 @RequiredArgsConstructor
 public class ClientController {
 
+    private final ClientCategoryService categoryService;
     private final ClientService clientService;
     // private final ClientRequest clientRequest;
     // //call jwtUtils
@@ -125,7 +131,7 @@ public class ClientController {
     public ResponseEntity<BasicResponse> searchClients(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "size", defaultValue = "5") int size,
             @RequestHeader("Authorization") String token) {
         try {
             BasicResponse response = clientService.searchClients(keyword, page, size);
@@ -144,4 +150,48 @@ public class ClientController {
         }
     }
 
+    // delete client
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<BasicResponse> deleteClient(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token) {
+        try {
+            clientService.deleteClient(id, token);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(BasicResponse.builder()
+                            .message("Client deleted successfully")
+                            .status(HttpStatus.OK)
+                            .build());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(BasicResponse.builder()
+                            .message("Client not found with id: " + id)
+                            .status(HttpStatus.NOT_FOUND)
+                            .build());
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse
+                            .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
+        }
+    }
+
+    // Get total number of clients
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/total")
+    public ResponseEntity<BasicResponse> getTotalClients() {
+        long totalClients = clientService.getTotalClients();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(BasicResponse.builder()
+                        .message("Total clients retrieved successfully")
+                        .status(HttpStatus.OK)
+                        .content(totalClients)
+                        .build());
+    }
 }
