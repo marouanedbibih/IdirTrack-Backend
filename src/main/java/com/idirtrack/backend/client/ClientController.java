@@ -1,8 +1,5 @@
 package com.idirtrack.backend.client;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.utils.MyResponse;
 import com.idirtrack.backend.utils.ValidationUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
 
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientInfoDTO;
@@ -41,7 +38,7 @@ import com.idirtrack.backend.errors.NotFoundException;
 @RequiredArgsConstructor
 public class ClientController {
 
-    private final ClientCategoryService  categoryService;
+    private final ClientCategoryService categoryService;
     private final ClientService clientService;
     // private final ClientRequest clientRequest;
     // //call jwtUtils
@@ -138,29 +135,27 @@ public class ClientController {
     public ResponseEntity<BasicResponse> searchClients(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestHeader("Authorization") String token){
-            try {
-                BasicResponse response = clientService.searchClients(keyword, page, size);
-                 return ResponseEntity.status(response.getStatus()).body(response);
+            @RequestParam(value = "size", defaultValue = "5") int size,
+            @RequestHeader("Authorization") String token) {
+        try {
+            BasicResponse response = clientService.searchClients(keyword, page, size);
+            return ResponseEntity.status(response.getStatus()).body(response);
 
-            }
-            catch (BasicException e) {
-                return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-            } catch (Exception e) {
-                return ResponseEntity
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(BasicResponse
-                                .builder()
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .message(e.getMessage())
-                                .build());
-            }
+        } catch (BasicException e) {
+            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse
+                            .builder()
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .message(e.getMessage())
+                            .build());
         }
+    }
 
-
-        //delete client
-         @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    // delete client
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<BasicResponse> deleteClient(
             @PathVariable Long id,
@@ -220,79 +215,14 @@ public class ClientController {
                         .status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .build()
                 );
-        }
-    }
 
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/categories/{id}")
-    public ResponseEntity<ClientCategory> getClientCategoryById(@PathVariable Long id) {
-        try {
-            ClientCategory clientCategory = categoryService.getClientCategoryById(id);
-            return ResponseEntity.ok(clientCategory);
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(null);
-        }
-    }
-
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @PostMapping("/categories/")
-    public ResponseEntity<BasicResponse> createClientCategory(@RequestBody @Valid ClientCategory clientCategory) {
-        try {
-            categoryService.createClientCategory(clientCategory);
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    BasicResponse.builder().message("Category created successfully").status(HttpStatus.CREATED).build());
-        } catch (AlreadyExistException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
-        }
-    }
-
-
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @PutMapping("/categories/{id}")
-    public ResponseEntity<BasicResponse> updateClientCategory(@PathVariable Long id, @RequestBody @Valid ClientCategory clientCategoryDetails) {
-        try {
-            categoryService.updateClientCategory(id, clientCategoryDetails);
-            return ResponseEntity.ok(
-                    BasicResponse.builder().message("Category updated successfully").status(HttpStatus.OK).build());
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.NOT_FOUND).build());
-        } catch (AlreadyExistException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                    BasicResponse.builder().message(e.getMessage()).status(HttpStatus.CONFLICT).build());
-        }
-    }
-
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @DeleteMapping("/categories/{id}")
-    public ResponseEntity<BasicResponse> deleteClientCategory(@PathVariable Long id) {
-        try {
-            categoryService.deleteClientCategory(id);
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(BasicResponse.builder()
-                            .message("Client category deleted successfully")
-                            .status(HttpStatus.OK)
-                            .build());
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(BasicResponse.builder()
-                            .message("Client category not found with id: " + id)
-                            .status(HttpStatus.NOT_FOUND)
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse.builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
         }
     }
 
     //Update client info 
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
      @PutMapping("/{clientId}")
+
     public ResponseEntity<MyResponse> updateClient(
             @PathVariable Long clientId,
             @RequestBody ClientUpdateRequest updateRequest) {
@@ -315,6 +245,7 @@ public class ClientController {
     }
 
     //Filter clients by category and is active 
+
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/filter")
     public ResponseEntity<MyResponse> filterClientsByCategoryAndStatus(
@@ -327,10 +258,9 @@ public class ClientController {
     }
 
 
-
     // Get total number of clients
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/total")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")@GetMapping("/total")
+
     public ResponseEntity<BasicResponse> getTotalClients() {
         long totalClients = clientService.getTotalClients();
         return ResponseEntity.status(HttpStatus.OK)
@@ -342,18 +272,7 @@ public class ClientController {
     }
 
 
-
-    // Get all categories with pagination and total count of clients
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/categories/")
-    public ResponseEntity<?> getCategoriesWithClientCount(
-        @RequestParam(value = "page", defaultValue = "1") int page,
-        @RequestParam(value = "size", defaultValue = "10") int size) {
-    MyResponse response = categoryService.getCategoriesWithClientCount(page, size);
-    return ResponseEntity.status(response.getStatus()).body(response);
-}
-
-    //get count of clients active and inactive
+    // get count of clients active and inactive
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/statistics/account/")
     public ResponseEntity<MyResponse> getActiveAndInactiveClientCount() {

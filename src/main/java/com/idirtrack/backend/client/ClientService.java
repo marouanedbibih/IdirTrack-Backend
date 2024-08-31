@@ -13,9 +13,6 @@ import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.basics.MetaData;
@@ -43,101 +40,102 @@ import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 
-
-
 @Service
 @RequiredArgsConstructor
 public class ClientService {
-    private final ClientRepository clientRepository;
-    private final UserService userService;
-    private final TraccarUserService traccarUserService;
-    private final ClientCategoryRepository clientCategoryRepository;
 
 
-    public Client findClientById(Long id) throws NotFoundException {
-        return clientRepository.findById(id)
-                .orElseThrow(
-                        () -> {
-                            return new NotFoundException(ErrorResponse.builder()
-                                    .message("Client not found with id: " + id)
-                                    .build());
-                        });
-    }
+        private final ClientRepository clientRepository;
+        private final UserService userService;
+        private final TraccarUserService traccarUserService;
+        private final ClientCategoryRepository clientCategoryRepository;
 
-    // Get list of clients to use in select dropdown
-    public MyResponse getClientsDropdown() {
-
-        Pageable page = PageRequest.of(0, 50, Sort.by("id").descending());
-        List<Client> clients = clientRepository.findAll(page).getContent();
-
-        if (clients.isEmpty()) {
-            return MyResponse.builder()
-                    .message("No clients found")
-                    .build();
-        } else {
-            List<ClientDTO> clientDTOs = clients.stream()
-                    .map(client -> {
-                        return ClientDTO.builder()
-                                .id(client.getId())
-                                .name(client.getUser().getName())
-                                .company(client.getCompany())
-                                .build();
-                    })
-                    .toList();
-            return MyResponse.builder()
-                    .data(clientDTOs)
-                    .status(HttpStatus.OK)
-                    .build();
+        public Client findClientById(Long id) throws NotFoundException {
+                return clientRepository.findById(id)
+                                .orElseThrow(
+                                                () -> {
+                                                        return new NotFoundException(ErrorResponse.builder()
+                                                                        .message("Client not found with id: " + id)
+                                                                        .build());
+                                                });
         }
-    }
 
+        // Get list of clients to use in select dropdown
+        public MyResponse getClientsDropdown() {
 
+                Pageable page = PageRequest.of(0, 50, Sort.by("id").descending());
+                List<Client> clients = clientRepository.findAll(page).getContent();
 
+                if (clients.isEmpty()) {
+                        return MyResponse.builder()
+                                        .message("No clients found")
+                                        .build();
+                } else {
+                        List<ClientDTO> clientDTOs = clients.stream()
+                                        .map(client -> {
+                                                return ClientDTO.builder()
+                                                                .id(client.getId())
+                                                                .name(client.getUser().getName())
+                                                                .company(client.getCompany())
+                                                                .build();
+                                        })
+                                        .toList();
+                        return MyResponse.builder()
+                                        .data(clientDTOs)
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+        }
 
-  /**
-   * service get all clients
-   * @param page
-   * @param size
-   * @return
-   * @throws BasicException
-   * 
-   */
+        /**
+         * service get all clients
+         * 
+         * @param page
+         * @param size
+         * @return
+         * @throws BasicException
+         * 
+         */
 
-  public BasicResponse getAllClients(int page, int size) throws BasicException {
+        public BasicResponse getAllClients(int page, int size) throws BasicException {
 
-    //Create page request
-      Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+                // Create page request
+                Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
 
-    //Get all clients
-    Page<Client> clients = clientRepository.findAll(pageable);
-    if (clients.isEmpty()) {
-      MyResponse response = MyResponse.builder()
-        .data(null)
-        .message("No clients found")
-        .status(HttpStatus.OK)
-        .build();
-  
-    }
-    //build the list of clients DtOs
-    List<ClientDto> clientsDto = clients.stream()
-      .map(client -> {
-        User user = client.getUser();
-        UserDTO userDto = UserDTO.builder()
-          .id(user.getId())
-          .username(user.getUsername())
-          .name(user.getName())
-          .email(user.getEmail())
-          .phone(user.getPhone())
-          .password(user.getPassword())
-          .traccarId(user.getTraccarId())
-          .role(user.getRole())
-          .build();
-        return ClientDto.builder()
-          .id(client.getId())
-          .user(userDto)
-          .build();
-      }).collect(Collectors.toList());
-     // Build the metadata
+                // Get all clients
+                Page<Client> clients = clientRepository.findAll(pageable);
+                if (clients.isEmpty()) {
+                        return BasicResponse.builder()
+                                        .content(null)
+                                        .message("No clients found")
+                                        .status(HttpStatus.OK)
+                                        .build();
+                }
+                // build the list of clients DtOs
+                List<ClientDto> clientsDto = clients.stream()
+                                .map(client -> {
+                                        User user = client.getUser();
+                                        UserDTO userDto = UserDTO.builder()
+                                                        .id(user.getId())
+                                                        .username(user.getUsername())
+                                                        .name(user.getName())
+                                                        .email(user.getEmail())
+                                                        .phone(user.getPhone())
+                                                        .password(user.getPassword())
+                                                        .traccarId(user.getTraccarId())
+                                                        .role(user.getRole())
+                                                        .build();
+                                        return ClientDto.builder()
+                                                        .id(client.getId())
+                                                        .user(userDto)
+                                                        .company(client.getCompany())
+                                                        .cne(client.getCne())
+                                                        .isDisabled(client.isDisabled())
+                                                        .totalVehicles(client.getVehicles().size())
+                                                        .category(client.getCategory().getName())
+                                                        .build();
+                                }).collect(Collectors.toList());
+                // Build the metadata
                 MetaData metaData = MetaData.builder()
                                 .currentPage(page)
                                 .size(size)
@@ -151,19 +149,19 @@ public class ClientService {
                                 .status(HttpStatus.OK)
                                 .build();
 
-    
-  }
+        }
 
-  /**
-   * Service to create a client with a one device in traccar
-   * @param clientRequest 
-   * @return BasicResponse
-   * @throws BasicException
-   */
-  @Transactional
-  public BasicResponse createClient(ClientRequest clientRequest, String token) throws BasicException {
-    // Get the user from the request
-     userService.isUsernameTaken(clientRequest.getUsername());
+        /**
+         * Service to create a client with a one device in traccar
+         * 
+         * @param clientRequest
+         * @return BasicResponse
+         * @throws BasicException
+         */
+        @Transactional
+        public BasicResponse createClient(ClientRequest clientRequest, String token) throws BasicException {
+                // Get the user from the request
+                userService.isUsernameTaken(clientRequest.getUsername());
                 userService.isEmailTaken(clientRequest.getEmail());
                 userService.isPhoneTaken(clientRequest.getPhone());
 
@@ -187,7 +185,7 @@ public class ClientService {
                         User user = userService.createNewUserInDB(userDTO);
 
                         // Save client in database
-                        Client client  = Client.builder()
+                        Client client = Client.builder()
                                         .user(user)
                                         .build();
                         client = clientRepository.save(client);
@@ -206,8 +204,7 @@ public class ClientService {
                                 .build());
         }
 
-        
-        //search clients
+        // search clients
         public BasicResponse searchClients(String keyword, int page, int size) throws BasicException {
                 // Create page request
                 Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
@@ -258,43 +255,40 @@ public class ClientService {
                                 .build();
         }
 
+        // delete client
 
-        //delete client
+        /**
+         * Service to delete a client
+         * 
+         * @param id
+         * @param token
+         * @throws BasicException
+         */
 
-/**
-     * Service to delete a client
-     * 
-     * @param id
-     * @param token
-     * @throws BasicException
-     */
+        @Transactional
+        public void deleteClient(Long id, String token) throws BasicException, NotFoundException {
+                // Find the client by ID or throw a NotFoundException if not found
+                Client client = clientRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
+                                                .message("Client not found with id: " + id)
+                                                .build()));
 
-     @Transactional
-     public void deleteClient(Long id, String token) throws BasicException, NotFoundException {
-         // Find the client by ID or throw a NotFoundException if not found
-         Client client = clientRepository.findById(id)
-                 .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
-                         .message("Client not found with id: " + id)
-                         .build()));
- 
-         // Remove the client from Traccar if the client has a Traccar ID
-         if (client.getUser().getTraccarId() != null) {
-             traccarUserService.deleteUser(client.getUser().getTraccarId(), token);
-         }
- 
-         // Remove the user associated with the client
-         userService.deleteUser(client.getUser().getId());
- 
-         // Delete the client from the database
-         clientRepository.delete(client);
-     }
+                // Remove the client from Traccar if the client has a Traccar ID
+                if (client.getUser().getTraccarId() != null) {
+                        traccarUserService.deleteUser(client.getUser().getTraccarId(), token);
+                }
 
+                // Remove the user associated with the client
+                userService.deleteUser(client.getUser().getId());
 
+                // Delete the client from the database
+                clientRepository.delete(client);
+        }
 
-     //get total clients
-     public long getTotalClients() {
-      return clientRepository.count();
-  }
+        // get total clients
+        public long getTotalClients() {
+                return clientRepository.count();
+        }
 
   //get number of clients active and inactive
   public MyResponse getActiveAndInactiveClientCount() {
