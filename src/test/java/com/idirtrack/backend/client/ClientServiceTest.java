@@ -1,6 +1,8 @@
 package com.idirtrack.backend.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.basics.BasicException;
+import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
 import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.traccar.TraccarUserService;
@@ -207,7 +210,61 @@ public class ClientServiceTest {
     }
 
 
+   @Test
+    void getClientInfoById_shouldReturnClientInfo_whenClientExists() throws NotFoundException {
+        // Arrange
+        Long clientId = 1L;
+        ClientCategory category = new ClientCategory();
+        category.setName("Category 1");
 
+        User user = new User();
+        user.setUsername("testuser");
+        user.setName("Test User");
+        user.setEmail("testuser@example.com");
+        user.setPhone("1234567890");
+
+        Client client = new Client();
+        client.setUser(user);
+        client.setCompany("Test Company");
+        client.setCne("CNE123456");
+        client.setCategory(category);
+        client.setRemarque("This is a remark");
+        client.setDisabled(false);
+
+        when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
+
+        // Act
+        ClientInfoDTO clientInfo = clientService.getClientInfoById(clientId);
+
+        // Assert
+        assertNotNull(clientInfo);
+        assertEquals("testuser", clientInfo.getUsername());
+        assertEquals("Test User", clientInfo.getName());
+        assertEquals("testuser@example.com", clientInfo.getEmail());
+        assertEquals("1234567890", clientInfo.getPhone());
+        assertEquals("Test Company", clientInfo.getCompany());
+        assertEquals("CNE123456", clientInfo.getCne());
+        assertEquals("Category 1", clientInfo.getCategory());
+        assertEquals("This is a remark", clientInfo.getRemarque());
+        assertFalse(clientInfo.isDisabled());
+
+        verify(clientRepository, times(1)).findById(clientId);
+    }
+
+    @Test
+    void getClientInfoById_shouldThrowNotFoundException_whenClientDoesNotExist() {
+        // Arrange
+        Long clientId = 1L;
+        when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+            clientService.getClientInfoById(clientId);
+        });
+
+        assertEquals("Client not found with id: " + clientId, exception.getMessage());
+        verify(clientRepository, times(1)).findById(clientId);
+    }
 
 
 }
