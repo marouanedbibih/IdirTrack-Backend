@@ -64,7 +64,7 @@ public class ClientCategoryController {
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/api/v1/client/categories")
     public ResponseEntity<?> getCategoriesWithClientCount(
-            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         MyResponse response = categoryService.getCategoriesWithClientCount(page, size);
         return ResponseEntity.status(response.getStatus()).body(response);

@@ -13,9 +13,6 @@ import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
 import com.idirtrack.backend.basics.MetaData;
@@ -42,22 +39,11 @@ import com.idirtrack.backend.client.dtos.ClientDto;
 import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
-<<<<<<< HEAD
-
-
-=======
->>>>>>> aa0faa4169617cc3142979ea1c554f79b71feceb
 
 @Service
 @RequiredArgsConstructor
 public class ClientService {
-<<<<<<< HEAD
-    private final ClientRepository clientRepository;
-    private final UserService userService;
-    private final TraccarUserService traccarUserService;
-    private final ClientCategoryRepository clientCategoryRepository;
-=======
->>>>>>> aa0faa4169617cc3142979ea1c554f79b71feceb
+
 
         private final ClientRepository clientRepository;
         private final UserService userService;
