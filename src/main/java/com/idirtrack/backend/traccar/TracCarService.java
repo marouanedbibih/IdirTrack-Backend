@@ -26,16 +26,15 @@ public class TracCarService {
 
     private final RestTemplate restTemplate;
     private final TraccarUtils traccarUtils;
-    private final JwtUtils jwtUtils;
 
     @Value("${traccar.api.url}")
     private String traccarUrl;
 
     // Create a device in Traccar
-    public Long createDevice(TracCarDeviceRequest request, String authHeader) {
+    public Long createDevice(TracCarDeviceRequest request, String bearerToken) {
         String url = traccarUrl + "/devices";
-        String token = jwtUtils.extractToken(authHeader);
-        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
+        // Create headers from the bearer token
+        HttpHeaders headers = traccarUtils.createHeadersFromBearerToken(bearerToken);
         HttpEntity<TracCarDeviceRequest> entity = new HttpEntity<>(request, headers);
 
         try {
@@ -55,10 +54,10 @@ public class TracCarService {
     }
 
     // Update a device in Traccar
-    public Long updateDevice(TracCarDeviceRequest request, String authHeader, Long id) {
+    public Long updateDevice(TracCarDeviceRequest request, String bearerToken, Long id) {
         String url = traccarUrl + "/devices/" + id;
-        String token = jwtUtils.extractToken(authHeader);
-        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
+        // Create headers from the bearer token
+        HttpHeaders headers = traccarUtils.createHeadersFromBearerToken(bearerToken);
         HttpEntity<TracCarDeviceRequest> entity = new HttpEntity<>(request, headers);
 
         try {
@@ -78,10 +77,10 @@ public class TracCarService {
     }
 
     // Delete a device in Traccar
-    public boolean deleteDevice(Long traccarId, String authHeader) {
+    public boolean deleteDevice(Long traccarId, String bearerToken) {
         String url = traccarUrl + "/devices/" + traccarId;
-        String token = jwtUtils.extractToken(authHeader);
-        HttpHeaders headers = traccarUtils.createHeadersFromToken(token);
+        // Create headers from the bearer token
+        HttpHeaders headers = traccarUtils.createHeadersFromBearerToken(bearerToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         try {

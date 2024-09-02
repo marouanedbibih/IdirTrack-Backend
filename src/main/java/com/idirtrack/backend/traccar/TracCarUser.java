@@ -79,7 +79,7 @@ public class TracCarUser {
                 .temporary(false)
                 .login(null)
                 // Admin attributes
-                .attributes(new HashMap<>()) 
+                .attributes(new HashMap<>())
                 .build();
     }
 
@@ -113,9 +113,10 @@ public class TracCarUser {
                 .temporary(false)
                 .login(null)
                 // Manager attributes
-                .attributes(new HashMap<>()) 
+                .attributes(new HashMap<>())
                 .build();
     }
+
     public static TracCarUser buildClient(UserDTO user) {
         return TracCarUser.builder()
                 // Client infos
@@ -146,7 +147,42 @@ public class TracCarUser {
                 .temporary(false)
                 .login(null)
                 // Client attributes
-                .attributes(new HashMap<>()) 
+                .attributes(new HashMap<>())
+                .build();
+    }
+
+    public static TracCarUser buildClientForUpdate(UserDTO user) {
+        return TracCarUser.builder()
+                // Client infos
+                .id(user.getTraccarId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .password(user.getPassword())
+                // Client permissions
+                .readonly(true)
+                .administrator(false)
+                .deviceLimit(-1)
+                .userLimit(0)
+                .deviceReadonly(true)
+                .limitCommands(false)
+                .disableReports(false)
+                // Client Map settings
+                .map(null)
+                .latitude(0.0)
+                .longitude(0.0)
+                .zoom(0)
+                // Client settings
+                .coordinateFormat("string")
+                .disabled(false)
+                .expirationTime(null)
+                .fixedEmail(false)
+                .poiLayer("")
+                .totpKey(null)
+                .temporary(false)
+                .login(null)
+                // Client attributes
+                .attributes(new HashMap<>())
                 .build();
     }
 

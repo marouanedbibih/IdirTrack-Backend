@@ -14,12 +14,12 @@ public class TraccarUtils {
 
     private final JwtUtils jwtUtils;
 
-    public HttpHeaders createHeadersFromToken(String jwtToken) {
+    public HttpHeaders createHeadersFromBearerToken(String authHeader) {
+        String token = jwtUtils.extractToken(authHeader);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-
         // Extract the session ID from the JWT token
-        String sessionId = jwtUtils.extractSession(jwtToken);
+        String sessionId = jwtUtils.extractSession(token);
         // Check if the session ID is not null
         if (sessionId != null) {
             // Add the session ID as a cookie in the headers

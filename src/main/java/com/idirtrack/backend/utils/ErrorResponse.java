@@ -17,6 +17,6 @@ public class ErrorResponse {
     // Errors
     private String message;
     private List<FieldErrorDTO> fieldErrors;
-
+    // Status
     private HttpStatus status;
 }

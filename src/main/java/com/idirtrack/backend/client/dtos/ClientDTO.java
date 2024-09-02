@@ -1,4 +1,4 @@
-package com.idirtrack.backend.client;
+package com.idirtrack.backend.client.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,9 +12,14 @@ import lombok.NoArgsConstructor;
 public class ClientDTO {
 
     private Long id;
+    private String username;
     private String name;
     private String email;
     private String phone;
     private String company;
-    
+    private String cne;
+    private Long categoryId;
+    private String categoryName;
+    private String remarque;
+    private boolean isDisabled;
 }

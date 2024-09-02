@@ -1,5 +1,5 @@
 package com.idirtrack.backend.staff;
-import com.idirtrack.backend.client.ClientDTO;
+import com.idirtrack.backend.client.dtos.ClientDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

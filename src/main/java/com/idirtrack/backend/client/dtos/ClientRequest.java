@@ -16,32 +16,36 @@ import jakarta.validation.constraints.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ClientRequest {
-    @NotBlank(message = "Username is mandatory")
+    @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     private String username;
 
-    @NotBlank(message = "Password is mandatory")
+    @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters long")
     private String password;
 
-    @NotBlank(message = "Name is mandatory")
+    @NotBlank(message = "Name is required")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
     private String name;
 
-    @NotBlank(message = "Email is mandatory")
+    @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
 
-    @NotBlank(message = "Phone number is mandatory")
+    @NotBlank(message = "Phone number is required")
     private String phone;
     
+    @NotBlank(message = "CNE is required") 
     private String cne;
 
-    @NotNull(message = "Category ID is mandatory")
+    @NotNull(message = "Category ID is required")
     private Long categoryId;
 
     private boolean isDisabled;
     
-    @Size(max = 250, message = "Remarque must be less than 250 characters")
     private String remarque;
+
+    @NotBlank(message = "Company is required")
+    private String company;
+
 }

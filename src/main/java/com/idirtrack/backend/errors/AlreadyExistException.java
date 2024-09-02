@@ -2,7 +2,7 @@ package com.idirtrack.backend.errors;
 
 import com.idirtrack.backend.utils.ErrorResponse;
 
-public class AlreadyExistException extends Exception {
+public class AlreadyExistException extends RuntimeException {
     private ErrorResponse response;
 
     public AlreadyExistException(String message) {
