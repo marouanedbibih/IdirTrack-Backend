@@ -15,30 +15,20 @@ import com.idirtrack.backend.errors.NotFoundException;
 import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
 
-import com.idirtrack.backend.basics.BasicResponse;
-import com.idirtrack.backend.basics.MessageType;
-import com.idirtrack.backend.basics.MetaData;
 import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.user.User;
 import com.idirtrack.backend.user.UserDTO;
 import com.idirtrack.backend.user.UserRole;
 import com.idirtrack.backend.user.UserService;
-import com.idirtrack.backend.basics.BasicException;
 
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
-import com.idirtrack.backend.utils.MyResponse;
 
-import jakarta.transaction.TransactionScoped;
 import jakarta.transaction.Transactional;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDTO;
-import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientTableDTO;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
@@ -49,7 +39,6 @@ public class ClientService {
 
         private final ClientRepository clientRepository;
         private final UserService userService;
-        private final TraccarUserService traccarUserService;
         private final ClientCategoryRepository clientCategoryRepository;
 
         public Client findClientById(Long id) throws NotFoundException {
@@ -64,6 +53,7 @@ public class ClientService {
 
         // Get list of clients to use in select dropdown
         public MyResponse getClientsDropdown() {
+                // Get Clients
                 Pageable page = PageRequest.of(0, 50, Sort.by("id").descending());
                 List<Client> clients = clientRepository.findAll(page).getContent();
 
@@ -203,11 +193,7 @@ public class ClientService {
         @Transactional
         public MyResponse deleteClient(Long id, String bearerToken) throws NotFoundException, MyException {
                 // Find the client by ID or throw a NotFoundException if not found
-                Client client = clientRepository.findById(id)
-                                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
-                                                .message("Client not found with id: " + id)
-                                                .status(HttpStatus.NOT_FOUND)
-                                                .build()));
+                Client client = this.utilToFindClientById(id);
                 // Check if the client has vehicles
                 if (!client.getVehicles().isEmpty()) {
                         throw new MyException(ErrorResponse.builder()
@@ -215,16 +201,10 @@ public class ClientService {
                                         .status(HttpStatus.NOT_ACCEPTABLE)
                                         .build());
                 }
-
-                // Remove the client from Traccar if the client has a Traccar ID
-                if (client.getUser().getTraccarId() != null) {
-                        traccarUserService.deleteUser(client.getUser().getTraccarId(), bearerToken);
-                }
-
-                // Delete the client from the database
-                userService.deleteUser(client.getUser().getId());
+                // Delete the user from the System
+                userService.deleteUserFromSystem(client.getUser().getId(), bearerToken);
                 clientRepository.delete(client);
-
+                // Return the response
                 return MyResponse.builder()
                                 .message("Client deleted successfully")
                                 .status(HttpStatus.OK)
@@ -285,19 +265,18 @@ public class ClientService {
 
         // Update client info
         @Transactional
-        public MyResponse updateClient(Long clientId, ClientUpdateRequest request,String bearerToken)
+        public MyResponse updateClient(Long clientId, ClientUpdateRequest request, String bearerToken)
                         throws NotFoundException, AlreadyExistException {
                 // Find the client by ID or throw a NotFoundException if not found
-                Client client = clientRepository.findById(clientId)
-                                .orElseThrow(() -> new NotFoundException("Client not found with id: " + clientId));
+                Client client = this.utilToFindClientById(clientId);
                 // Find the Category by ID or throw a NotFoundException if not found
                 ClientCategory category = clientCategoryRepository.findById(request.getCategoryId())
-                                .orElseThrow(() -> new NotFoundException("Category not found with id: " + request.getCategoryId()));
+                                .orElseThrow(() -> new NotFoundException(
+                                                "Category not found with id: " + request.getCategoryId()));
 
-                // Check if the username and email are already taken except for the current client
-                userService.isUserExistInSystemExcept(
-                                request.getUsername(),
-                                request.getEmail(),
+                // Check if the username and email are already taken except for the current
+                // client
+                userService.isUserExistInSystemExcept(request.getUsername(), request.getEmail(),
                                 client.getUser().getId());
 
                 // Update user in the System
@@ -397,5 +376,14 @@ public class ClientService {
                                         .status(HttpStatus.OK)
                                         .build();
                 }
+        }
+
+        private Client utilToFindClientById(Long id) throws NotFoundException {
+                return clientRepository.findById(id)
+                                .orElseThrow(() -> {
+                                        return new NotFoundException(ErrorResponse.builder()
+                                                        .message("Client not found with id: " + id)
+                                                        .build());
+                                });
         }
 }

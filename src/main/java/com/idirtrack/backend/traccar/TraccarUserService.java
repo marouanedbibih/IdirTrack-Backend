@@ -66,7 +66,7 @@ public class TraccarUserService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new MyException(ErrorResponse.builder()
-                    .message("Failed to create user in Traccar")
+                    .message("Failed to create user in Traccar :" + e.getMessage())
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }

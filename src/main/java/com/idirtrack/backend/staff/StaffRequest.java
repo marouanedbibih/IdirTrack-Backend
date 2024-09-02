@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StaffCreateRequest {
+public class StaffRequest {
     @NotEmpty(message = "Name cannot be empty")
     private String name;
 
