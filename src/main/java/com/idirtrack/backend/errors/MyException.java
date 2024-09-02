@@ -2,7 +2,7 @@ package com.idirtrack.backend.errors;
 
 import com.idirtrack.backend.utils.ErrorResponse;
 
-public class MyException extends Exception {
+public class MyException extends RuntimeException {
     private ErrorResponse response;
 
     public MyException(String message) {

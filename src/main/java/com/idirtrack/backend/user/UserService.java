@@ -1,5 +1,8 @@
 package com.idirtrack.backend.user;
 
+import java.lang.reflect.Field;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -7,8 +10,12 @@ import org.springframework.stereotype.Service;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
+import com.idirtrack.backend.errors.AlreadyExistException;
+import com.idirtrack.backend.errors.MyException;
 import com.idirtrack.backend.errors.NotFoundException;
+import com.idirtrack.backend.traccar.TraccarUserService;
 import com.idirtrack.backend.utils.ErrorResponse;
+import com.idirtrack.backend.utils.FieldErrorDTO;
 import com.idirtrack.backend.basics.BasicError;
 
 import lombok.RequiredArgsConstructor;
@@ -19,56 +26,96 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TraccarUserService traccarUserService;
 
     /**
-     * Check if the username is already taken
+     * Save the user in the system
+     * 
+     * This method will save the user in the Traccar system and in the database
+     * 
+     * @param userDTO
+     * @param bearerToken
+     * @return User
+     * @throws MyException
      */
+    public User saveUserInSystem(UserDTO userDTO, String bearerToken) throws MyException {
 
-    public boolean isUsernameTaken(String username) throws BasicException {
-        boolean isTaken = userRepository.existsByUsername(username);
-        if (isTaken == true) {
-            BasicError error = BasicError.of("username", "Username is already taken");
-            throw new BasicException(BasicResponse.builder()
-                    .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
+        // Save the user in Traccar system
+        Long traccarId = traccarUserService.createUser(userDTO, bearerToken);
+
+        // Set the traccar id to the userDTO
+        userDTO.setTraccarId(traccarId);
+
+        // Encode the password
+        userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        // Save the user in the database
+        User user = User.builder()
+                .username(userDTO.getUsername())
+                .name(userDTO.getName())
+                .email(userDTO.getEmail())
+                .phone(userDTO.getPhone())
+                .password(userDTO.getPassword())
+                .role(userDTO.getRole())
+                .traccarId(userDTO.getTraccarId())
+                .build();
+
+        try {
+            user = userRepository.save(user);
+            return user;
+        } catch (Exception e) {
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to save user in database")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }
-        return false;
+
     }
 
     /**
-     * Check if the email is already taken
+     * Update the user in the system
+     * 
+     * This method will update the user in the Traccar system and in the database
+     * 
+     * @param userDTO
+     * @param bearerToken
+     * @return User
+     * @throws MyException
      */
 
-    public boolean isEmailTaken(String email) throws BasicException {
-        boolean isTaken = userRepository.existsByEmail(email);
-        if (isTaken == true) {
-            BasicError error = BasicError.of("email", "Email is already taken");
-            throw new BasicException(BasicResponse.builder()
-                    .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
+    public User updateUserInSystem(UserDTO userDTO, String bearerToken) throws MyException {
+
+        // Update the user in Traccar system
+        traccarUserService.updateUser(userDTO, bearerToken);
+
+        // Encode the password
+        if (userDTO.getPassword() != null) {
+            userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        }
+
+        // Save the user in the database
+        User user = User.builder()
+                .id(userDTO.getId())
+                .username(userDTO.getUsername())
+                .name(userDTO.getName())
+                .email(userDTO.getEmail())
+                .phone(userDTO.getPhone())
+                .password(userDTO.getPassword())
+                .role(userDTO.getRole())
+                .traccarId(userDTO.getTraccarId())
+                .build();
+
+        try {
+            user = userRepository.save(user);
+            return user;
+        } catch (Exception e) {
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to update user in database")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }
-        return false;
-    }
 
-    /**
-     * Check if the phone is already taken
-     */
-
-    public boolean isPhoneTaken(String phone) throws BasicException {
-        boolean isTaken = userRepository.existsByPhone(phone);
-        if (isTaken == true) {
-            BasicError error = BasicError.of("phone", "Phone is already taken");
-            throw new BasicException(BasicResponse.builder()
-                    .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
-                    .build());
-        }
-        return false;
     }
 
     /**
@@ -84,7 +131,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    //delete user
+    // delete user
     public void deleteUser(Long userId) throws NotFoundException {
         // Find the user by ID or throw a NotFoundException if not found
         User user = userRepository.findById(userId)
@@ -118,7 +165,7 @@ public class UserService {
      * @return
      * @throws BasicException
      */
-    public User createNewUserInDB(UserDTO userDTO) throws BasicException {
+    public User createNewUserInDB(UserDTO userDTO) throws MyException {
         User user = User.builder()
                 .username(userDTO.getUsername())
                 .name(userDTO.getName())
@@ -131,9 +178,8 @@ public class UserService {
         try {
             user = userRepository.save(user);
         } catch (Exception e) {
-            throw new BasicException(BasicResponse.builder()
-                    .error(BasicError.of("user", "User not saved in database"))
-                    .messageType(MessageType.ERROR)
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to save user in database")
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }
@@ -154,68 +200,83 @@ public class UserService {
                 .orElseThrow(() -> {
                     BasicError error = BasicError.of("id", "User not found");
                     return new BasicException(BasicResponse.builder()
-                             .error(error)
+                            .error(error)
                             .messageType(MessageType.ERROR)
                             .status(HttpStatus.NOT_FOUND)
                             .build());
                 });
     }
 
-    /**
-     * Check if the username is already taken, except for the user with the given id
-     * 
-     * @param username
-     * @param id
-     */
-    public void isUsernameTakenExcept(String username, Long id) throws BasicException {
-        boolean isTaken = userRepository.existsByUsernameAndIdNot(username, id);
-        if (isTaken) {
-            BasicError error = BasicError.of("username", "Username is already taken by another user");
-            throw new BasicException(BasicResponse.builder()
-                    .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
-                    .build());
-        }
+    // Check if the use already exist in system
+    public boolean isUserExistInSystem(String username, String email) {
+
+        this.isUsernameTaken(username);
+        this.isEmailTaken(email);
+
+        return false;
     }
 
-    /**
-     * Check if the email is already taken, except for the user with the given id.
-     *
-     * @param email The email to check.
-     * @param id    The id of the user to exclude from the check.
-     * @throws BasicException if the email is already taken by another user.
-     */
-    public void isEmailTakenExcept(String email, Long id) throws BasicException {
-        boolean isTaken = userRepository.existsByEmailAndIdNot(email, id);
-        if (isTaken) {
-            BasicError error = BasicError.of("email", "Email is already taken by another user");
-            throw new BasicException(BasicResponse.builder()
-                     .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
-                    .build());
+    // Check if the username already taken
+    private boolean isUsernameTaken(String username) throws AlreadyExistException {
+        if (userRepository.existsByUsername(username)) {
+            throw new AlreadyExistException(ErrorResponse.builder()
+                    .fieldErrors(List.of(FieldErrorDTO.builder()
+                            .field("username")
+                            .message("Username is already taken")
+                            .build()))
+                    .build() // Added this to complete the builder chain
+            );
         }
+        return false;
     }
 
-    /**
-     * Check if the phone number is already taken, except for the user with the
-     * given id.
-     *
-     * @param phone The phone number to check.
-     * @param id    The id of the user to exclude from the check.
-     * @throws BasicException if the phone number is already taken by another user.
-     */
-    public void isPhoneTakenExcept(String phone, Long id) throws BasicException {
-        boolean isTaken = userRepository.existsByPhoneAndIdNot(phone, id);
-        if (isTaken) {
-            BasicError error = BasicError.of("phone", "Phone number is already taken by another user");
-            throw new BasicException(BasicResponse.builder()
-                    .error(error)
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.CONFLICT)
+    // Check if the email already taken
+    private boolean isEmailTaken(String email) throws AlreadyExistException {
+        if (userRepository.existsByEmail(email)) {
+            throw new AlreadyExistException(ErrorResponse.builder()
+                    .fieldErrors(List.of(FieldErrorDTO.builder()
+                            .field("email")
+                            .message("Email is already taken")
+                            .build()))
+                    .build() // Added this to complete the builder chain
+            );
+        }
+        return false;
+    }
+
+    // Check if the user exists in the system except for the user with the given id
+    public boolean isUserExistInSystemExcept(String username, String email, Long id) throws AlreadyExistException {
+        this.isUsernameTakenExcept(username, id);
+        this.isEmailTakenExcept(email, id);
+
+        return false;
+
+    }
+
+    // Check if the username is already taken, except for the user with the given id
+    private boolean isUsernameTakenExcept(String username, Long id) throws AlreadyExistException {
+        if (userRepository.existsByUsernameAndIdNot(username, id)) {
+            throw new AlreadyExistException(ErrorResponse.builder()
+                    .fieldErrors(List.of(FieldErrorDTO.builder()
+                            .field("username")
+                            .message("Username is already taken by another user")
+                            .build()))
                     .build());
         }
+        return false;
+    }
+
+    // Check if the email is already taken, except for the user with the given id
+    private boolean isEmailTakenExcept(String email, Long id) throws AlreadyExistException {
+        if (userRepository.existsByEmailAndIdNot(email, id)) {
+            throw new AlreadyExistException(ErrorResponse.builder()
+                    .fieldErrors(List.of(FieldErrorDTO.builder()
+                            .field("email")
+                            .message("Email is already taken by another user")
+                            .build()))
+                    .build());
+        }
+        return false;
     }
 
     /**
@@ -225,13 +286,11 @@ public class UserService {
      * @param user
      * @return User
      */
-    public User updateUserInDB(UserDTO userDTO, Long id) throws BasicException {
+    public User updateUserInDB(UserDTO userDTO, Long id) throws NotFoundException, MyException {
         // Find user by id
-        User user = userRepository.findById(id).orElseThrow(
-                () -> new BasicException(BasicResponse.builder()
-                         .error(BasicError.of("id", "User not found"))
-                        .messageType(MessageType.ERROR)
-                        .status(HttpStatus.NOT_FOUND)
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
+                        .message("User not found with id: " + id)
                         .build()));
 
         // Check if the password is exist, then encode it
@@ -252,12 +311,11 @@ public class UserService {
         try {
             user = userRepository.save(user);
             return user;
-        } 
+        }
         // If there is an exception, throw a BasicException
         catch (Exception e) {
-            throw new BasicException(BasicResponse.builder()
-                     .error(BasicError.of("user", "User not updated in database"))
-                    .messageType(MessageType.ERROR)
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to update user in database")
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }

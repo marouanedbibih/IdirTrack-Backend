@@ -1,8 +1,10 @@
 package com.idirtrack.backend.traccar;
+
 import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -15,9 +17,12 @@ import org.springframework.web.client.RestTemplate;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.basics.MessageType;
+import com.idirtrack.backend.errors.MyException;
 import com.idirtrack.backend.jwt.JwtUtils;
 import com.idirtrack.backend.user.UserDTO;
 import com.idirtrack.backend.user.UserRole;
+import com.idirtrack.backend.utils.ErrorResponse;
+import com.idirtrack.backend.utils.TraccarUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,200 +31,99 @@ import lombok.RequiredArgsConstructor;
 public class TraccarUserService {
 
     private final RestTemplate restTemplate;
-    private final TracCarUser tracCarUser;
-    private final TracCarSessionService tracCarSessionService;
-    private final JwtUtils jwtUtils;
+    private final TraccarUtils traccarUtils;
     // Logger
     private static final Logger logger = LoggerFactory.getLogger(TraccarUserService.class);
 
-    public Map<String, Object> createAdmin(UserDTO user) throws BasicException {
-        String url = "http://152.228.219.146:8082/api/users";
+    @Value("${traccar.api.url}")
+    private String traccarUrl;
 
-        // Create the request body from TracCarUser
-        TracCarUser admin = TracCarUser.buildAdminUser(user);
-
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // add basic auth with username and password idirtech idirtech1
-        headers.setBasicAuth("idirtech", "idirtech1");
-
-        // Create the HttpEntity
-        HttpEntity<TracCarUser> entity = new HttpEntity<>(admin, headers);
-
-        // Send the POST request
-        try {
-            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
-            logger.info("Admin user created successfully: {}", response);
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new BasicException(BasicResponse.builder()
-                    .message(e.getMessage())
-                    .content(null)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-
-    }
-
-    public Map<String, Object> createUser(UserDTO user, UserRole role,String jwtToken) throws BasicException {
-        String url = "http://152.228.219.146:8082/api/users";
-
-        // Create the request body from TracCarUser
-        // TracCarUser admin = TracCarUser.buildAdminUser(user);
-        TracCarUser tracCarUser = new TracCarUser();
-        if (role == UserRole.ADMIN) {
-            tracCarUser = TracCarUser.buildAdminUser(user);
-        } else if (role == UserRole.MANAGER) {
-            tracCarUser = TracCarUser.buildManagerUser(user);
-        } else if (role == UserRole.CLIENT) {
-             tracCarUser = TracCarUser.buildClient(user);
-        }
-
-        // Set headers
-        // HttpHeaders headers = new HttpHeaders();
-        // headers.setContentType(MediaType.APPLICATION_JSON);
-
-         // Set headers using the session ID from the JWT
-         HttpHeaders headers = createHeadersFromToken(jwtToken);
-
-        
-
-        // Create the HttpEntity
-        HttpEntity<TracCarUser> entity = new HttpEntity<>(tracCarUser, headers);
-
-        // Send the POST request
-        try {
-            Map<String, Object> response = restTemplate.postForObject(url, entity, Map.class);
-            logger.info("Admin user created successfully: {}", response);
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new BasicException(BasicResponse.builder()
-                    .message(e.getMessage())
-                    .content(null)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-
-    }
-
-    public Map<String, Object> updateUser(UserDTO user) throws BasicException {
-        String url = "http://152.228.219.146:8082/api/users/" + user.getTraccarId();
+    // Create a user in Traccar
+    public Long createUser(UserDTO user, String bearerToken) throws MyException {
+        String url = traccarUrl + "/users";
 
         // Create the request body based on the user's role
-        TracCarUser tracCarUser = new TracCarUser();
+        TracCarUser requestBody = new TracCarUser();
         if (user.getRole() == UserRole.ADMIN) {
-            tracCarUser = TracCarUser.buildAdminUser(user);
+            requestBody = TracCarUser.buildAdminUser(user);
         } else if (user.getRole() == UserRole.MANAGER) {
-            tracCarUser = TracCarUser.buildManagerUser(user);
+            requestBody = TracCarUser.buildManagerUser(user);
         } else if (user.getRole() == UserRole.CLIENT) {
-            // tracCarUser = TracCarUser.buildClientUser(user);
+            requestBody = TracCarUser.buildClient(user);
         }
 
-        tracCarUser.setId(user.getTraccarId());
+        // Config the authorization header for traccar request
+        HttpHeaders requestHeader = traccarUtils.createHeadersFromBearerToken(bearerToken);
+        HttpEntity<TracCarUser> requestEntity = new HttpEntity<>(requestBody, requestHeader);
 
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth("idirtech", "idirtech1"); // Basic auth with username and password
+        // Send the POST request
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(url, requestEntity, Map.class);
+            // Cast the response to a map and get the id
+            Long traccarUserId = Long.parseLong(response.get("id").toString());
+            return traccarUserId;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to create user in Traccar")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build());
+        }
 
-        // Create the HttpEntity
-        HttpEntity<TracCarUser> entity = new HttpEntity<>(tracCarUser, headers);
+    }
+
+    // Update user in Traccar
+    public void updateUser(UserDTO user, String bearerToken) throws MyException {
+        String url = traccarUrl + "/users/" + user.getTraccarId();
+
+        // Create the request body based on the user's role
+        TracCarUser requestBody = new TracCarUser();
+        if (user.getRole() == UserRole.ADMIN) {
+            requestBody = TracCarUser.buildAdminUser(user);
+        } else if (user.getRole() == UserRole.MANAGER) {
+            requestBody = TracCarUser.buildManagerUser(user);
+        } else if (user.getRole() == UserRole.CLIENT) {
+            requestBody = TracCarUser.buildClientForUpdate(user);
+        }
+
+        // Create the request header with the bearer token
+        HttpHeaders requestHeader = traccarUtils.createHeadersFromBearerToken(bearerToken);
+        HttpEntity<TracCarUser> requestEntity = new HttpEntity<>(requestBody, requestHeader);
 
         // Send the PUT request
         try {
-            restTemplate.put(url, entity);
-            logger.info("User updated successfully: {}", user.getTraccarId());
-            return Map.of("status", "success", "message", "User updated successfully");
+            restTemplate.put(url, requestEntity);
         } catch (Exception e) {
-            logger.error("Failed to update user with ID {}: {}", user.getTraccarId(), e.getMessage());
-            throw new BasicException(BasicResponse.builder()
-                    .message("Failed to update user: " + e.getMessage())
-                    .content(null)
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to update user in Traccar: " + e.getMessage())
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }
     }
 
-    //Delete client 
-    public void deleteUser(Long traccarUserId, String token) throws BasicException {
-        String url = "http://152.228.219.146:8082/api/users/" + traccarUserId;
-
-        String jwtToken = token.replace("Bearer ", "").trim();
-
-    
-        // Set headers using the session ID from the JWT
-        HttpHeaders headers = createHeadersFromToken(jwtToken);       
-    
-        // Create the HttpEntity without a body (for DELETE requests, the body is usually not required)
+    // Delete client from Traccar
+    public void deleteUser(Long traccarUserId, String bearerToken) throws MyException {
+        String url = traccarUrl + "/users/" + traccarUserId;
+        // Config the authorization header for traccar request
+        HttpHeaders headers = traccarUtils.createHeadersFromBearerToken(bearerToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        
+
         try {
-            // Send the DELETE request
             ResponseEntity<Void> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
-    
-            // Check if the response is successful (2xx status codes)
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new BasicException(BasicResponse.builder()
-                        .messageType(MessageType.ERROR)
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                throw new MyException(ErrorResponse.builder()
                         .message("Failed to delete user in Traccar")
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .build());
             }
         } catch (Exception e) {
-            throw new BasicException(BasicResponse.builder()
-                    .messageType(MessageType.ERROR)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            throw new MyException(ErrorResponse.builder()
                     .message("Failed to delete user in Traccar: " + e.getMessage())
-                    .build());
-        }
-    }
-    
-
-    public boolean deleteUser(Long traccarId) throws BasicException {
-        String url = "http://152.228.219.146:8082/api/users/" + traccarId;
-
-        // Set headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth("idirtech", "idirtech1"); // Basic auth with username and password
-
-        // Create the HttpEntity
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        // Send the DELETE request
-        try {
-            restTemplate.exchange(url, HttpMethod.DELETE, entity, Void.class);
-            logger.info("User deleted successfully: {}", traccarId);
-            return true;
-        } catch (Exception e) {
-            logger.error("Failed to delete user with ID {}: {}", traccarId, e.getMessage());
-            throw new BasicException(BasicResponse.builder()
-                    .message("Failed to delete user: " + e.getMessage())
-                    .content(null)
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build());
         }
     }
 
 
-    private HttpHeaders createHeadersFromToken(String jwtToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        
-        // Extract the session ID from the JWT token
-        String sessionId = jwtUtils.extractSession(jwtToken);
-        // Check if the session ID is not null
-        if (sessionId != null) {
-            // Add the session ID as a cookie in the headers
-            headers.add(HttpHeaders.COOKIE, "JSESSIONID=" + sessionId);
-        } else {
-            throw new IllegalArgumentException("Session ID not found in the JWT token.");
-        }
-
-        return headers;
-    }
 }

@@ -19,246 +19,129 @@ import org.springframework.web.bind.annotation.RestController;
 import com.idirtrack.backend.basics.BasicException;
 import com.idirtrack.backend.basics.BasicResponse;
 import com.idirtrack.backend.jwt.JwtUtils;
+import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.MyResponse;
+import com.idirtrack.backend.utils.RequestValidation;
 import com.idirtrack.backend.utils.ValidationUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-
-import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientUpdateRequest;
-import com.idirtrack.backend.errors.AlreadyExistException;
+import com.idirtrack.backend.errors.MyException;
 import com.idirtrack.backend.errors.NotFoundException;
 
 @RestController
-@RequestMapping("/api/client")
 @RequiredArgsConstructor
 public class ClientController {
 
-    private final ClientCategoryService categoryService;
     private final ClientService clientService;
-    // private final ClientRequest clientRequest;
-    // //call jwtUtils
-    private final JwtUtils jwtUtils;
+    
+
+    // Get list of clients with pagination
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/api/v1/clients")
+    public ResponseEntity<MyResponse> getAllClients(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+
+        MyResponse response = clientService.getListOfClients(page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    // Endpoint to search clients
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/api/v1/clients/search")
+    public ResponseEntity<MyResponse> searchClients(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+
+        MyResponse response = clientService.searchClients(keyword, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+
+    }
+
+    // Filter clients by category and is active
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/api/v1/clients/filter")
+    public ResponseEntity<MyResponse> filterClientsByCategoryAndStatus(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) boolean isDisabled,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+        MyResponse response = clientService.filterClients(categoryId, isDisabled, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 
     // Get list of clients to use in select dropdown
-    @GetMapping("/dropdown")
+    @GetMapping("/api/v1/clients/dropdown")
     public ResponseEntity<MyResponse> getClientsDropdown() {
         MyResponse response = clientService.getClientsDropdown();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    /**
-     * Endpoint to create a client
-     * 
-     * @param clientRequest
-     * @param bindingResult
-     * @param token
-     * @return ResponseEntity<BasicResponse>
-     */
+    // Search clients to use in select dropdown
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @PostMapping("/")
-    public ResponseEntity<BasicResponse> createClient(
-            @RequestBody @Valid ClientRequest clientRequest,
-            BindingResult bindingResult,
-            @RequestHeader("Authorization") String token) {
-    
-        // Validate the request
-        if (bindingResult.hasErrors()) {
-            return ValidationUtils.handleValidationErrors(bindingResult);
-        }
-    
-        try {
-            // Remove "Bearer " from the token and trim any spaces
-            String jwtToken = token.replace("Bearer ", "").trim();
-    
-            // Call the service to create the client
-            BasicResponse response = clientService.createClient(clientRequest, jwtToken);
-    
-            // Extract the session from the JWT token
-            String session = jwtUtils.extractSession(jwtToken);
-            // Create a ResponseCookie with the session ID
-            ResponseCookie sessionCookie = ResponseCookie.from("JSESSIONID", session)
-                    .httpOnly(true)
-                    .path("/")
-                    .build();
-    
-            // Return the response with the session cookie in the headers
-            return ResponseEntity.status(response.getStatus())
-                    .header("Set-Cookie", sessionCookie.toString())
-                    .body(response);
-    
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse
-                            .builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
-        }
-    }
-
-    // get all clients with pagination
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/")
-    public ResponseEntity<BasicResponse> getAllClients(
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "5") int size,
-            @RequestHeader("Authorization") String token) {
-        try {
-            BasicResponse response = clientService.getAllClients(page, size);
-            return ResponseEntity.status(response.getStatus()).body(response);
-
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse
-                            .builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
-        }
-    }
-
-    // search clients
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/search")
-    public ResponseEntity<BasicResponse> searchClients(
-            @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "page", defaultValue = "1") int page,
-            @RequestParam(value = "size", defaultValue = "5") int size,
-            @RequestHeader("Authorization") String token) {
-        try {
-            BasicResponse response = clientService.searchClients(keyword, page, size);
-            return ResponseEntity.status(response.getStatus()).body(response);
-
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse
-                            .builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
-        }
-    }
-
-    // delete client
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<BasicResponse> deleteClient(
-            @PathVariable Long id,
-            @RequestHeader("Authorization") String token) {
-        try {
-            clientService.deleteClient(id, token);
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(BasicResponse.builder()
-                            .message("Client deleted successfully")
-                            .status(HttpStatus.OK)
-                            .build());
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(BasicResponse.builder()
-                            .message("Client not found with id: " + id)
-                            .status(HttpStatus.NOT_FOUND)
-                            .build());
-        } catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(BasicResponse
-                            .builder()
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .message(e.getMessage())
-                            .build());
-        }
-    }
-
-    // Get client by id
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/{id}")
-    public ResponseEntity<MyResponse> getClientById(@PathVariable Long id) {
-        try {
-            ClientInfoDTO clientInfo = clientService.getClientInfoById(id);
-            return ResponseEntity.ok(
-                MyResponse.builder()
-                    .data(clientInfo)
-                    .message("Client information retrieved successfully")
-                    .status(HttpStatus.OK)
-                    .build()
-            );
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(
-                    MyResponse.builder()
-                        .message("Client not found with id: " + id)
-                        .status(HttpStatus.NOT_FOUND)
-                        .build()
-                );
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(
-                    MyResponse.builder()
-                        .message("An error occurred while retrieving the client information")
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .build()
-                );
-
-        }
-    }
-
-    //Update client info 
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-     @PutMapping("/{clientId}")
-
-    public ResponseEntity<MyResponse> updateClient(
-            @PathVariable Long clientId,
-            @RequestBody ClientUpdateRequest updateRequest) {
-        try {
-            MyResponse response = clientService.updateClient(clientId, updateRequest);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (NotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(MyResponse.builder()
-                            .message(e.getMessage())
-                            .status(HttpStatus.NOT_FOUND)
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(MyResponse.builder()
-                            .message(e.getMessage())
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .build());
-        }
-    }
-
-    //Filter clients by category and is active 
-
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
-    @GetMapping("/filter")
-    public ResponseEntity<MyResponse> filterClientsByCategoryAndStatus(
-            @RequestParam Long categoryId,
-            @RequestParam boolean isDisabled,
-            @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-        MyResponse response = clientService.filterClientsByCategoryAndStatus(categoryId, isDisabled, page, size);
+    @GetMapping("/api/v1/clients/dropdown/search")
+    public ResponseEntity<MyResponse> searchClientsDropdown(
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        MyResponse response = clientService.searchClientsDropdown(keyword);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
 
+    // Endpoint to create a new client
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PostMapping("/api/v1/client")
+    public ResponseEntity<MyResponse> createClient(
+            @RequestBody @Valid ClientRequest clientRequest,
+            @RequestHeader("Authorization") String bearerToken) {
+
+        MyResponse response = clientService.createClient(clientRequest, bearerToken);
+        return ResponseEntity.status(response.getStatus()).body(response);
+
+    }
+
+    // Update client info
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @PutMapping("/api/v1/client/{clientId}")
+    public ResponseEntity<MyResponse> updateClient(
+            @PathVariable Long clientId,
+            @RequestBody @Valid ClientUpdateRequest updateRequest,
+            @RequestHeader("Authorization") String bearerToken) {
+        MyResponse response = clientService.updateClient(clientId, updateRequest, bearerToken);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    /**
+     * ID-based Endpoints
+     */
+
+    // Endpoint to delete a client
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @DeleteMapping("/api/v1/client/{id}")
+    public ResponseEntity<?> deleteClient(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String bearerToken) {
+
+        MyResponse response = clientService.deleteClient(id, bearerToken);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    // Get client by id
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/api/v1/client/{id}")
+    public ResponseEntity<MyResponse> getClientById(@PathVariable Long id) {
+        MyResponse response = clientService.getClientById(id);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     // Get total number of clients
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")@GetMapping("/total")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/total")
 
     public ResponseEntity<BasicResponse> getTotalClients() {
         long totalClients = clientService.getTotalClients();
@@ -270,7 +153,6 @@ public class ClientController {
                         .build());
     }
 
-
     // get count of clients active and inactive
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/statistics/account/")
@@ -279,6 +161,3 @@ public class ClientController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }
-
-
-

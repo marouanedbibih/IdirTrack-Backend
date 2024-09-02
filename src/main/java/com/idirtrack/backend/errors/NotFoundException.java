@@ -2,7 +2,7 @@ package com.idirtrack.backend.errors;
 
 import com.idirtrack.backend.utils.ErrorResponse;
 
-public class NotFoundException extends Exception {
+public class NotFoundException extends RuntimeException {
     private ErrorResponse response;
 
     public NotFoundException(String message) {
