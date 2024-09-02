@@ -70,24 +70,24 @@ public class AdminController {
      * @param request UserRequest
      * @return ResponseEntity<BasicResponse>
      */
-    @PostMapping("/")
-    public ResponseEntity<BasicResponse> createAdmin(@RequestBody UserRequest request) {
-        // Try to create the admin
-        try {
-            BasicResponse response = adminService.createAdmin(request);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        }
-        // Catch BasicException and return the response
-        catch (BasicException e) {
-            return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
-        }
-        // Catch any exception and return an internal server error
-        catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
-                    .message(e.getMessage())
-                    .content(null)
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-    }
+    // @PostMapping("/")
+    // public ResponseEntity<BasicResponse> createAdmin(@RequestBody UserRequest request) {
+    //     // Try to create the admin
+    //     try {
+    //         BasicResponse response = adminService.createAdmin(request);
+    //         return ResponseEntity.status(response.getStatus()).body(response);
+    //     }
+    //     // Catch BasicException and return the response
+    //     catch (BasicException e) {
+    //         return ResponseEntity.status(e.getResponse().getStatus()).body(e.getResponse());
+    //     }
+    //     // Catch any exception and return an internal server error
+    //     catch (Exception e) {
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.builder()
+    //                 .message(e.getMessage())
+    //                 .content(null)
+    //                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
+    //                 .build());
+    //     }
+    // }
 }
