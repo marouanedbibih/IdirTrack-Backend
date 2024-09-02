@@ -28,16 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final TraccarUserService traccarUserService;
 
-    /**
-     * Save the user in the system
-     * 
-     * This method will save the user in the Traccar system and in the database
-     * 
-     * @param userDTO
-     * @param bearerToken
-     * @return User
-     * @throws MyException
-     */
+    // Service to save a user in the system
     public User saveUserInSystem(UserDTO userDTO, String bearerToken) throws MyException {
 
         // Save the user in Traccar system
@@ -72,17 +63,7 @@ public class UserService {
 
     }
 
-    /**
-     * Update the user in the system
-     * 
-     * This method will update the user in the Traccar system and in the database
-     * 
-     * @param userDTO
-     * @param bearerToken
-     * @return User
-     * @throws MyException
-     */
-
+    // Service to update a user in the system
     public User updateUserInSystem(UserDTO userDTO, String bearerToken) throws MyException {
 
         // Update the user in Traccar system
@@ -118,28 +99,27 @@ public class UserService {
 
     }
 
-    /**
-     * Save the user in the database
-     */
-
-    public User save(User user) {
-        if (user.getPassword() != null) {
-            // Hash the password
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
-        // Save the user
-        return userRepository.save(user);
-    }
-
-    // delete user
-    public void deleteUser(Long userId) throws NotFoundException {
-        // Find the user by ID or throw a NotFoundException if not found
-        User user = userRepository.findById(userId)
+    // Service to delete the user from the system
+    public void deleteUserFromSystem(Long id, String bearerToken) throws NotFoundException, MyException {
+        // Find the user by id
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
-                        .message("User not found with id: " + userId)
+                        .message("User not found with id: " + id)
                         .build()));
-        userRepository.delete(user);
+        // Delete the user from Traccar system
+        traccarUserService.deleteUser(user.getTraccarId(), bearerToken);
+        // Delete the user from the database
+        try {
+            userRepository.delete(user);
+        } catch (Exception e) {
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to delete user from database")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build());
+        }
+
     }
+
 
     /**
      * Find the user by username and return it
@@ -158,42 +138,8 @@ public class UserService {
                 });
     }
 
-    /**
-     * Create a new user in the database
-     * 
-     * @param userDTO
-     * @return
-     * @throws BasicException
-     */
-    public User createNewUserInDB(UserDTO userDTO) throws MyException {
-        User user = User.builder()
-                .username(userDTO.getUsername())
-                .name(userDTO.getName())
-                .email(userDTO.getEmail())
-                .phone(userDTO.getPhone())
-                .password(passwordEncoder.encode(userDTO.getPassword()))
-                .role(userDTO.getRole())
-                .traccarId(userDTO.getTraccarId())
-                .build();
-        try {
-            user = userRepository.save(user);
-        } catch (Exception e) {
-            throw new MyException(ErrorResponse.builder()
-                    .message("Failed to save user in database")
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
 
-        return user;
-    }
 
-    /**
-     * Find user by id
-     * 
-     * @param id
-     * @return User
-     * @throws BasicException
-     */
 
     public User findUserByID(Long id) throws BasicException {
         return userRepository.findById(id)
@@ -279,47 +225,5 @@ public class UserService {
         return false;
     }
 
-    /**
-     * Update the user in the database
-     * 
-     * @param userDTO
-     * @param user
-     * @return User
-     */
-    public User updateUserInDB(UserDTO userDTO, Long id) throws NotFoundException, MyException {
-        // Find user by id
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorResponse.builder()
-                        .message("User not found with id: " + id)
-                        .build()));
-
-        // Check if the password is exist, then encode it
-        if (userDTO.getPassword() != null) {
-            userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        }
-
-        // Set the new user data
-        user.setUsername(userDTO.getUsername());
-        user.setName(userDTO.getName());
-        user.setEmail(userDTO.getEmail());
-        user.setPhone(userDTO.getPhone());
-        user.setPassword(userDTO.getPassword());
-        user.setRole(userDTO.getRole());
-        user.setTraccarId(userDTO.getTraccarId());
-
-        // Try to save the user
-        try {
-            user = userRepository.save(user);
-            return user;
-        }
-        // If there is an exception, throw a BasicException
-        catch (Exception e) {
-            throw new MyException(ErrorResponse.builder()
-                    .message("Failed to update user in database")
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build());
-        }
-
-    }
 
 }

@@ -34,69 +34,69 @@ public class AdminService {
         private final UserRepository userRepository;
         private final AdminRepository adminRepository;
 
-        public BasicResponse createAdmin(UserRequest request) throws BasicException {
+        // public BasicResponse createAdmin(UserRequest request) throws BasicException {
 
-                // Check if the username is already taken
-                userService.isUsernameTaken(request.getName());
-                // Check if the email is already taken
-                userService.isEmailTaken(request.getEmail());
-                // Check if the phone is already taken
-                userService.isPhoneTaken(request.getPhone());
+        //         // // Check if the username is already taken
+        //         // userService.isUsernameTaken(request.getName());
+        //         // // Check if the email is already taken
+        //         // userService.isEmailTaken(request.getEmail());
+        //         // // Check if the phone is already taken
+        //         // userService.isPhoneTaken(request.getPhone());
 
-                // Buid the user DTO
-                UserDTO userDTO = UserDTO.builder()
-                                .username(request.getUsername())
-                                .name(request.getName())
-                                .email(request.getEmail())
-                                .phone(request.getPhone())
-                                .password(request.getPassword())
-                                .build();
-                // Save the user in TracCar
-                Map<String, Object> admin = traccarUserService.createAdmin(userDTO);
+        //         // Buid the user DTO
+        //         UserDTO userDTO = UserDTO.builder()
+        //                         .username(request.getUsername())
+        //                         .name(request.getName())
+        //                         .email(request.getEmail())
+        //                         .phone(request.getPhone())
+        //                         .password(request.getPassword())
+        //                         .build();
+        //         // Save the user in TracCar
+        //         // Map<String, Object> admin = traccarUserService.createAdmin(userDTO);
 
-                if (admin != null) {
-                        // set the admin role to the user
-                        userDTO.setRole(UserRole.ADMIN);
-                        // Hass the password
-                        userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-                        // Build the User entity
-                        User user = User.builder()
-                                        .username(userDTO.getUsername())
-                                        .name(userDTO.getName())
-                                        .email(userDTO.getEmail())
-                                        .phone(userDTO.getPhone())
-                                        .password(userDTO.getPassword())
-                                        .role(userDTO.getRole())
-                                        .build();
+        //         if () {
+        //                 // set the admin role to the user
+        //                 userDTO.setRole(UserRole.ADMIN);
+        //                 // Hass the password
+        //                 userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        //                 // Build the User entity
+        //                 User user = User.builder()
+        //                                 .username(userDTO.getUsername())
+        //                                 .name(userDTO.getName())
+        //                                 .email(userDTO.getEmail())
+        //                                 .phone(userDTO.getPhone())
+        //                                 .password(userDTO.getPassword())
+        //                                 .role(userDTO.getRole())
+        //                                 .build();
 
-                        // Save the user and admin in the database
-                        userRepository.save(user);
+        //                 // Save the user and admin in the database
+        //                 userRepository.save(user);
 
-                        // Build the Admin entity
-                        Admin adminEntity = Admin.builder()
-                                        .user(user)
-                                        .build();
-                        // Save the admin in the database
-                        adminEntity = adminRepository.save(adminEntity);
-                        // Set the admin entity to the user
-                        user.setAdmin(adminEntity);
-                        // Save the user in the database
-                        userRepository.save(user);
+        //                 // Build the Admin entity
+        //                 Admin adminEntity = Admin.builder()
+        //                                 .user(user)
+        //                                 .build();
+        //                 // Save the admin in the database
+        //                 adminEntity = adminRepository.save(adminEntity);
+        //                 // Set the admin entity to the user
+        //                 user.setAdmin(adminEntity);
+        //                 // Save the user in the database
+        //                 userRepository.save(user);
 
-                        // Return success response
-                        return BasicResponse.builder()
-                                        .message("Admin user created successfully")
-                                        .status(HttpStatus.CREATED)
-                                        .build();
+        //                 // Return success response
+        //                 return BasicResponse.builder()
+        //                                 .message("Admin user created successfully")
+        //                                 .status(HttpStatus.CREATED)
+        //                                 .build();
 
-                }
+        //         }
 
-                throw new BasicException(BasicResponse.builder()
-                                .message("Traccar user creation failed, is null")
-                                .content(null)
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .build());
-        }
+        //         throw new BasicException(BasicResponse.builder()
+        //                         .message("Traccar user creation failed, is null")
+        //                         .content(null)
+        //                         .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        //                         .build());
+        // }
 
         /**
          * Service method to get all admins with pagination

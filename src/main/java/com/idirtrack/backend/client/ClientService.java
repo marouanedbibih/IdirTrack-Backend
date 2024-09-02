@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 
 import com.idirtrack.backend.client.dtos.ClientCategoryDto;
 import com.idirtrack.backend.client.dtos.ClientDTO;
-import com.idirtrack.backend.client.dtos.ClientDto;
 import com.idirtrack.backend.client.dtos.ClientInfoDTO;
 import com.idirtrack.backend.client.dtos.ClientRequest;
 import com.idirtrack.backend.client.dtos.ClientTableDTO;
