@@ -1,21 +1,25 @@
 package com.idirtrack.backend.client.dtos;
 
-import com.idirtrack.backend.user.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class ClientDto {
+public class ClientDTO {
+
     private Long id;
-    private UserDTO user;
+    private String username;
+    private String name;
+    private String email;
+    private String phone;
     private String company;
     private String cne;
+    private Long categoryId;
+    private String categoryName;
+    private String remarque;
     private boolean isDisabled;
-    private int totalVehicles;
-    private String category;
 }
