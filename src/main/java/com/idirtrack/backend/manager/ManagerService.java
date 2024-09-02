@@ -152,7 +152,7 @@ public class ManagerService {
                     put("totalPages", managersPage.getTotalPages());
                     put("totalElements", managersPage.getTotalElements());
                     put("currentPage", page);
-                    put("currentElements", managersPage.getNumberOfElements());
+                    put("size", size);
                 }
             };
             // Return the list of ManagerTableDTO

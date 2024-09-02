@@ -39,7 +39,7 @@ public class ManagerController {
 
     // Endpoint to get list of managers
     @PreAuthorize("hasAuthority('ADMIN')")
-    @GetMapping("/api/v1/managers/")
+    @GetMapping("/api/v1/managers")
     public ResponseEntity<MyResponse> getAllManagers(
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "5") int size) {

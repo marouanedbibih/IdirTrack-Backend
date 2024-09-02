@@ -49,16 +49,29 @@ public class SecurityConfig {
                     // Public endpoints
                     .requestMatchers("/api/auth/login").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                    // Endpoints for ADMIN
-                    .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-
-                    .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "MANAGER")
-                    .requestMatchers("/api/manager/**").hasAuthority("ADMIN")
-                    /**
-                     * Endpoints for client APIs, only users with the role ADMIN and MANAGER can access this
-                     */
-                    .requestMatchers("/api/client/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoints for manage managers
+                    .requestMatchers("/api/v1/manager/**").hasAuthority("ADMIN")
+                    .requestMatchers("/api/v1/managers/**").hasAuthority("ADMIN")
+                    // Endpoints for manage clients
+                    .requestMatchers("/api/v1/client/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/v1/clients/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoints for manage staff
+                    .requestMatchers("/api/v1/staff/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/v1/staffs/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoints for manage devices
+                    .requestMatchers("/api/device/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/devices/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endppoint to manage sims
+                    .requestMatchers("/api/sim/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/sims/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoint to manage boitiers
+                    .requestMatchers("/api/boitier/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/boitiers/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoint to manage vehicles
+                    .requestMatchers("/api/vehicle/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    .requestMatchers("/api/vehicles/**").hasAnyAuthority("ADMIN", "MANAGER")
+                    // Endpoint to manage subscriptions
+                    .requestMatchers("/api/v1/subscriptions/**").hasAnyAuthority("ADMIN", "MANAGER")
                   
 
                     .anyRequest().authenticated();
