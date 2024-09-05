@@ -16,6 +16,19 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
+    // Endpoint to filter subscriptions by DateEnd From and DateEnd To
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
+    @GetMapping("/api/v1/subscriptions/filter")
+    public ResponseEntity<MyResponse> filterSubscriptionsByDateEnd(
+            @RequestParam(value = "dateEndFrom") String dateEndFrom,
+            @RequestParam(value = "dateEndTo") String dateEndTo,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "5") int size) {
+
+        MyResponse response = subscriptionService.filterSubscriptionsByDateEnd(dateEndFrom, dateEndTo, page, size);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     // Endpoint to get list of subscriptions
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     @GetMapping("/api/v1/subscriptions")
