@@ -22,6 +22,41 @@ import lombok.RequiredArgsConstructor;
 public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
 
+    // Filter subscriptions by DateEnd From and DateEnd To
+    public MyResponse filterSubscriptionsByDateEnd(String dateEndFrom, String dateEndTo, int page, int size) {
+        // Convert string to LocalDate
+        LocalDate dateEndFromLocalDate = LocalDate.parse(dateEndFrom);
+        LocalDate dateEndToLocalDate = LocalDate.parse(dateEndTo);
+
+        // Get page of subscriptions
+        Pageable paging = PageRequest.of(page - 1, size, Sort.by("id").descending());
+        Page<Subscription> subscriptionsPage = subscriptionRepository.filterSubscriptionsByDateEnd(dateEndFromLocalDate, dateEndToLocalDate, paging);
+
+        if (subscriptionsPage.getContent().isEmpty()) {
+            return MyResponse.builder()
+                    .status(HttpStatus.NO_CONTENT)
+                    .message("No subscriptions found")
+                    .build();
+        } else {
+            // Convert list of subscriptions to list of SubscriptionTableDTO
+            List<SubscriptionTableDTO> subscriptionTableDTOs = subscriptionsPage.getContent().stream()
+                    .map(this::toSubscriptionTableDTO)
+                    .toList();
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("totalPages", subscriptionsPage.getTotalPages());
+            metadata.put("totalElements", subscriptionsPage.getTotalElements());
+            metadata.put("currentPage", page);
+            metadata.put("size", size);
+
+            return MyResponse.builder()
+                    .status(HttpStatus.OK)
+                    .data(subscriptionTableDTOs)
+                    .metadata(metadata)
+                    .build();
+        }
+    }   
+
     // Service to get list of subscriptions
     public MyResponse getListOfSubscriptions(int page, int size) {
         // Get page of subscriptions
