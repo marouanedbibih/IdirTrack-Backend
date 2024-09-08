@@ -24,10 +24,6 @@ import org.springframework.http.HttpStatus;
 
 import com.idirtrack.backend.errors.AlreadyExistException;
 import com.idirtrack.backend.errors.NotFoundException;
-import com.idirtrack.backend.operator.Operator;
-import com.idirtrack.backend.operator.OperatorRepository;
-import com.idirtrack.backend.operator.OperatorRequest;
-import com.idirtrack.backend.operator.OperatorService;
 import com.idirtrack.backend.utils.MyResponse;
 
 class OperatorServiceTest {

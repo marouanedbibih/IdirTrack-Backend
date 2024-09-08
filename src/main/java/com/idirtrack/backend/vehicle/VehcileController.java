@@ -28,14 +28,13 @@ import com.idirtrack.backend.vehicle.https.VehicleRequest;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/vehicles")
 public class VehcileController {
 
     @Autowired
     private VehicleService vehicleService;
 
     // Endpoint to search for a vehicle
-    @GetMapping("/search")
+    @GetMapping("/api/vehicles/search")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('MANAGER')")
     public ResponseEntity<?> searchVehicle(
             @RequestParam(defaultValue = "") String search,
@@ -52,7 +51,7 @@ public class VehcileController {
     }
 
     // Endpoint to delete a vehicle
-    @DeleteMapping("/{vehicleId}/")
+    @DeleteMapping("/api/vehicles/{vehicleId}/")
     public ResponseEntity<?> deleteVehicle(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long vehicleId,
@@ -70,7 +69,7 @@ public class VehcileController {
     }
 
     // Update a vehicle
-    @PutMapping("/{vehicleId}/")
+    @PutMapping("/api/vehicles/{vehicleId}/")
     public ResponseEntity<?> updateVehicle(@PathVariable Long vehicleId,
             @Valid @RequestBody UpdateVehicleRequest request,
             @RequestHeader("Authorization") String authHeader,
@@ -96,7 +95,7 @@ public class VehcileController {
     }
 
     // Create a new vehicle
-    @PostMapping("/")
+    @PostMapping("/api/vehicles/")
     public ResponseEntity<?> createNewVehicle(
             @Valid @RequestBody VehicleRequest request,
             BindingResult bindingResult,
@@ -123,7 +122,7 @@ public class VehcileController {
     }
 
     // Get all vehicles
-    @GetMapping("/")
+    @GetMapping("/api/vehicles/")
     public ResponseEntity<?> getAllVehicles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
@@ -138,22 +137,16 @@ public class VehcileController {
     }
 
     // Get a vehicle by ID
-    @GetMapping("/{vehicleId}/")
-    public ResponseEntity<?> getVehicleById(@PathVariable Long vehicleId) {
-        try {
-            MyResponse response = vehicleService.getVehicleById(vehicleId);
-            return ResponseEntity.status(response.getStatus()).body(response);
-        } catch (NotFoundException ex) {
-            return ResponseEntity.status(ex.getResponse().getStatus()).body(ex.getResponse());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.builder()
-                    .message(e.getMessage())
-                    .build());
-        }
+    @GetMapping("/api/vehicles/{vehicleId}/")
+    public ResponseEntity<MyResponse> getVehicleById(@PathVariable Long vehicleId) {
+
+        MyResponse response = vehicleService.getVehicleById(vehicleId);
+        return ResponseEntity.status(response.getStatus()).body(response);
+
     }
 
     // Get a vehicle's boities
-    @GetMapping("/{vehicleId}/boities/")
+    @GetMapping("/api/vehicles/{vehicleId}/boities/")
     public ResponseEntity<?> getVehicleBoities(@PathVariable Long vehicleId) {
         try {
             MyResponse response = vehicleService.getVehicleBoities(vehicleId);

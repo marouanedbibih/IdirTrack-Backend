@@ -298,8 +298,15 @@ public class VehicleService {
                 // Build The DTOs
                 ClientDTO clientDTO = ClientDTO.builder()
                                 .id(vehicle.getClient().getId())
+                                .username(vehicle.getClient().getUser().getUsername())
                                 .name(vehicle.getClient().getUser().getName())
+                                .email(vehicle.getClient().getUser().getEmail())
+                                .phone(vehicle.getClient().getUser().getPhone())
+                                .categoryId(vehicle.getClient().getCategory().getId())
+                                .categoryName(vehicle.getClient().getCategory().getName())
                                 .company(vehicle.getClient().getCompany())
+                                .cne(vehicle.getClient().getCne())
+                                .remarque(vehicle.getClient().getRemarque())
                                 .build();
                 VehicleDTO vehicleDTO = VehicleDTO.builder()
                                 .id(vehicle.getId())
