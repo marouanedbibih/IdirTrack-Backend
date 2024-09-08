@@ -24,11 +24,18 @@ import com.idirtrack.backend.device.DeviceDTO;
 import com.idirtrack.backend.device.DeviceRepository;
 import com.idirtrack.backend.device.DeviceService;
 import com.idirtrack.backend.device.DeviceStatus;
+import com.idirtrack.backend.device.https.DeviceRequest;
+import com.idirtrack.backend.device.https.DeviceUpdateRequest;
 import com.idirtrack.backend.deviceType.DeviceType;
 import com.idirtrack.backend.deviceType.DeviceTypeRepository;
+import com.idirtrack.backend.stock.Stock;
+import com.idirtrack.backend.stock.StockRepository;
+import com.idirtrack.backend.utils.MyResponse;
 
 import java.sql.Date;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,14 +53,17 @@ public class DeviceServiceTest {
     @Mock
     private DeviceTypeRepository deviceTypeRepository;
 
+    @Mock
+    private StockRepository stockRepository;
+
+    @Mock
+    private DeviceStockRepository deviceStockRepository;
+
     @BeforeEach
     void setUp() {
         // This initializes the mocks and injects them into the deviceService instance
         MockitoAnnotations.openMocks(this);
     }
-
-
-    
 
     /**
      * Test Case for counting devices
@@ -132,6 +142,421 @@ public class DeviceServiceTest {
 
         // Assert
         assertEquals(expectedResponse, actualResponse);
+    }
+
+    /**
+     * Test Case for creating a device successfully
+     * 
+     * @throws BasicException
+     */
+
+    @Test
+    void createDevice_shouldCreateDeviceSuccessfully_whenValidRequest() throws BasicException {
+        // Arrange
+        DeviceRequest deviceRequest = DeviceRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(1L)
+                .remarque("New device")
+                .build();
+
+        DeviceType deviceType = DeviceType.builder().id(1L).name("GPS Tracker").build();
+
+        // Mock the repository calls
+        when(deviceTypeRepository.findById(deviceRequest.getDeviceTypeId())).thenReturn(Optional.of(deviceType));
+        when(deviceRepository.existsByImei(deviceRequest.getImei())).thenReturn(false);
+
+        Device savedDevice = Device.builder()
+                .id(1L)
+                .imei(deviceRequest.getImei())
+                .status(DeviceStatus.NON_INSTALLED)
+                .deviceType(deviceType)
+                .remarque(deviceRequest.getRemarque())
+                .createdAt(new Date(System.currentTimeMillis()))
+                .build();
+
+        when(deviceRepository.save(any(Device.class))).thenReturn(savedDevice);
+
+        // Mock stock repository behavior to avoid the NullPointerException
+        when(stockRepository.findByDateEntree(any(Date.class))).thenReturn(new ArrayList<>());
+
+        // Mock deviceStockRepository behavior
+        when(deviceStockRepository.save(any())).thenReturn(null); // Mocking to avoid null exception during save
+
+        // Act
+        BasicResponse response = deviceService.createDevice(deviceRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.CREATED, response.getStatus());
+        assertEquals("Device created successfully", response.getMessage());
+        assertNotNull(response.getContent());
+        verify(deviceRepository, times(1)).save(any(Device.class));
+        verify(deviceTypeRepository, times(1)).findById(deviceRequest.getDeviceTypeId());
+    }
+
+    @Test
+    void createDevice_shouldThrowException_whenDeviceTypeNotFound() {
+        // Arrange
+        DeviceRequest deviceRequest = DeviceRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(99L) // Non-existing device type ID
+                .remarque("New device")
+                .build();
+
+        when(deviceTypeRepository.findById(deviceRequest.getDeviceTypeId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.createDevice(deviceRequest);
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getResponse().getStatus());
+        assertTrue(exception.getResponse().getErrors().stream()
+                .anyMatch(error -> error.getKey().equals("deviceTypeId")
+                        && error.getMessage().equals("Device type not found")));
+        verify(deviceTypeRepository, times(1)).findById(deviceRequest.getDeviceTypeId());
+        verify(deviceRepository, never()).save(any(Device.class));
+    }
+
+    @Test
+    void createDevice_shouldThrowException_whenImeiAlreadyExists() throws BasicException {
+        // Arrange
+        DeviceRequest deviceRequest = DeviceRequest.builder()
+                .imei("123456789012345") // Existing IMEI
+                .deviceTypeId(1L)
+                .remarque("New device")
+                .build();
+
+        when(deviceRepository.existsByImei(deviceRequest.getImei())).thenReturn(true);
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.createDevice(deviceRequest);
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getResponse().getStatus());
+        verify(deviceRepository, times(1)).existsByImei(deviceRequest.getImei());
+        verify(deviceRepository, never()).save(any(Device.class));
+    }
+
+
+    /*
+     * Test case for updating a device successfully
+     * @throws BasicException
+     */
+
+
+    @Test
+    void updateDevice_shouldUpdateDeviceSuccessfully_whenValidRequest() throws BasicException {
+        // Arrange
+        Long deviceId = 1L;
+        DeviceUpdateRequest deviceUpdateRequest = DeviceUpdateRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(1L)
+                .remarque("Updated device")
+                .build();
+
+        Device existingDevice = Device.builder()
+                .id(deviceId)
+                .imei("987654321012345")
+                .deviceType(DeviceType.builder().id(2L).name("Old Type").build())
+                .remarque("Old device")
+                .createdAt(new Date(System.currentTimeMillis()))
+                .status(DeviceStatus.NON_INSTALLED)
+                .build();
+
+        DeviceType deviceType = DeviceType.builder().id(1L).name("GPS Tracker").build();
+
+        // Mock the repository calls
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(existingDevice));
+        when(deviceRepository.existsByImei(deviceUpdateRequest.getImei())).thenReturn(false);
+        when(deviceTypeRepository.findById(deviceUpdateRequest.getDeviceTypeId())).thenReturn(Optional.of(deviceType));
+
+        Device savedDevice = Device.builder()
+                .id(deviceId)
+                .imei(deviceUpdateRequest.getImei())
+                .deviceType(deviceType)
+                .remarque(deviceUpdateRequest.getRemarque())
+                .status(DeviceStatus.NON_INSTALLED)
+                .createdAt(existingDevice.getCreatedAt())
+                .updatedAt(new Date(System.currentTimeMillis()))
+                .build();
+
+        when(deviceRepository.save(any(Device.class))).thenReturn(savedDevice);
+
+        // Act
+        BasicResponse response = deviceService.updateDevice(deviceId, deviceUpdateRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals("Device updated successfully", response.getMessage());
+        assertNotNull(response.getContent());
+        verify(deviceRepository, times(1)).save(any(Device.class));
+        verify(deviceTypeRepository, times(1)).findById(deviceUpdateRequest.getDeviceTypeId());
+    }
+
+    @Test
+    void updateDevice_shouldThrowException_whenDeviceNotFound() {
+        // Arrange
+        Long deviceId = 1L;
+        DeviceUpdateRequest deviceUpdateRequest = DeviceUpdateRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(1L)
+                .remarque("Updated device")
+                .build();
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.updateDevice(deviceId, deviceUpdateRequest);
+        });
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getResponse().getStatus());
+        assertEquals("Device not found", exception.getResponse().getMessage());
+    }
+
+    @Test
+    void updateDevice_shouldThrowException_whenImeiAlreadyExists() {
+        // Arrange
+        Long deviceId = 1L;
+        DeviceUpdateRequest deviceUpdateRequest = DeviceUpdateRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(1L)
+                .remarque("Updated device")
+                .build();
+
+        Device existingDevice = Device.builder()
+                .id(deviceId)
+                .imei("987654321012345")
+                .deviceType(DeviceType.builder().id(2L).name("Old Type").build())
+                .remarque("Old device")
+                .createdAt(new Date(System.currentTimeMillis()))
+                .status(DeviceStatus.NON_INSTALLED)
+                .build();
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(existingDevice));
+        when(deviceRepository.existsByImei(deviceUpdateRequest.getImei())).thenReturn(true);
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.updateDevice(deviceId, deviceUpdateRequest);
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getResponse().getStatus());
+        assertEquals("IMEI already exists", exception.getResponse().getErrors().get(0).getMessage());
+    }
+
+    @Test
+    void updateDevice_shouldThrowException_whenDeviceTypeNotFound() {
+        // Arrange
+        Long deviceId = 1L;
+        DeviceUpdateRequest deviceUpdateRequest = DeviceUpdateRequest.builder()
+                .imei("123456789012345")
+                .deviceTypeId(1L)
+                .remarque("Updated device")
+                .build();
+
+        Device existingDevice = Device.builder()
+                .id(deviceId)
+                .imei("987654321012345")
+                .deviceType(DeviceType.builder().id(2L).name("Old Type").build())
+                .remarque("Old device")
+                .createdAt(new Date(System.currentTimeMillis()))
+                .status(DeviceStatus.NON_INSTALLED)
+                .build();
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(existingDevice));
+        when(deviceTypeRepository.findById(deviceUpdateRequest.getDeviceTypeId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.updateDevice(deviceId, deviceUpdateRequest);
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getResponse().getStatus());
+        assertEquals("Device type not found", exception.getResponse().getErrors().get(0).getMessage());
+    }
+
+    /*
+     * Test case for deleting a device successfully
+     * @throws BasicException
+     */
+    @Test
+    void deleteDevice_shouldDeleteDeviceSuccessfully_whenDeviceExists() throws BasicException {
+        // Arrange
+        Long deviceId = 1L;
+        Device device = Device.builder()
+                .id(deviceId)
+                .imei("123456789012345")
+                .deviceType(DeviceType.builder().id(1L).name("GPS Tracker").build())
+                .build();
+
+        // Mock repository calls
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        // Act
+        BasicResponse response = deviceService.deleteDevice(deviceId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals("Device deleted successfully with IME: 123456789012345", response.getMessage());
+
+        // Verify interactions with the repository
+        verify(deviceRepository, times(1)).findById(deviceId);
+        verify(deviceRepository, times(1)).delete(device);
+    }
+
+    @Test
+    void deleteDevice_shouldThrowException_whenDeviceNotFound() {
+        // Arrange
+        Long deviceId = 1L;
+
+        // Mock repository calls
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        BasicException exception = assertThrows(BasicException.class, () -> {
+            deviceService.deleteDevice(deviceId);
+        });
+
+        // Assert exception details
+        assertEquals(HttpStatus.NOT_FOUND, exception.getResponse().getStatus());
+        assertEquals("Device not found with id: " + deviceId, exception.getResponse().getMessage());
+
+        // Verify that the delete method was never called since the device was not found
+        verify(deviceRepository, times(0)).delete(any(Device.class));
+    }
+
+    @Test
+    void deleteDevice_shouldUpdateDeviceStockOnDelete_whenDeviceExists() throws BasicException {
+        // Arrange
+        Long deviceId = 1L;
+        Device device = Device.builder()
+                .id(deviceId)
+                .imei("123456789012345")
+                .deviceType(DeviceType.builder().id(1L).name("GPS Tracker").build())
+                .createdAt(new Date(System.currentTimeMillis()))
+                .build();
+
+        Stock stock = Stock.builder()
+                .id(1L)
+                .dateEntree(device.getCreatedAt())
+                .quantity(1) // Set initial quantity to 1, so after decrement it becomes 0
+                .build();
+
+        DeviceStock deviceStock = DeviceStock.builder()
+                .deviceType(device.getDeviceType())
+                .stock(stock)
+                .build();
+
+        List<Stock> stocks = new ArrayList<>();
+        stocks.add(stock);
+
+        // Mock repository calls
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+        when(stockRepository.findByDateEntree(device.getCreatedAt())).thenReturn(stocks);
+        when(deviceStockRepository.findByStockAndDeviceType(stock, device.getDeviceType())).thenReturn(deviceStock);
+
+        // Act
+        BasicResponse response = deviceService.deleteDevice(deviceId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals("Device deleted successfully with IME: 123456789012345", response.getMessage());
+
+        // Verify interactions with the repository and the stock update method
+        verify(deviceRepository, times(1)).findById(deviceId);
+        verify(deviceRepository, times(1)).delete(device);
+        verify(stockRepository, times(1)).findByDateEntree(device.getCreatedAt());
+        verify(deviceStockRepository, times(1)).findByStockAndDeviceType(stock, device.getDeviceType());
+        
+        // Stock quantity should be decremented and now be 0, so the stock and deviceStock should be deleted
+        verify(stockRepository, times(1)).delete(stock);
+        verify(deviceStockRepository, times(1)).delete(deviceStock);
+
+        // Ensure no additional interactions with the repository
+        verifyNoMoreInteractions(deviceRepository);
+    }
+
+
+    /*
+     * get all devices
+     * @param page
+     * @param size
+     * @return MyResponse
+     */
+        @Test
+    void getAllDevicesNonInstalled_shouldReturnNonInstalledDevices_whenDevicesExist() {
+        // Arrange
+        int page = 1;
+        int size = 5;
+        Pageable pageRequest = PageRequest.of(page - 1, size);
+
+        Device device1 = Device.builder()
+                .id(1L)
+                .imei("123456789012345")
+                .deviceType(DeviceType.builder().id(1L).name("GPS Tracker").build())
+                .build();
+
+        Device device2 = Device.builder()
+                .id(2L)
+                .imei("987654321098765")
+                .deviceType(DeviceType.builder().id(2L).name("Vehicle Tracker").build())
+                .build();
+
+        List<Device> deviceList = Arrays.asList(device1, device2);
+        Page<Device> devicePage = new PageImpl<>(deviceList, pageRequest, deviceList.size());
+
+        when(deviceRepository.findAllByStatus(DeviceStatus.NON_INSTALLED, pageRequest)).thenReturn(devicePage);
+
+        // Act
+        MyResponse response = deviceService.getAllDevicesNonInstalled(page, size);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getData());
+
+        @SuppressWarnings("unchecked")
+        List<DeviceDTO> deviceDTOs = (List<DeviceDTO>) response.getData();
+        assertEquals(2, deviceDTOs.size());
+        assertEquals("123456789012345", deviceDTOs.get(0).getIMEI());
+        assertEquals("987654321098765", deviceDTOs.get(1).getIMEI());
+
+        // Verify metadata
+        Map<String, Object> metadata = response.getMetadata();
+        assertEquals(1, metadata.get("currentPage"));
+        assertEquals(1, metadata.get("totalPages"));
+        assertEquals(5, metadata.get("size"));
+        assertEquals(2L, metadata.get("totalElements"));
+
+        verify(deviceRepository, times(1)).findAllByStatus(DeviceStatus.NON_INSTALLED, pageRequest);
+    }
+
+    @Test
+    void getAllDevicesNonInstalled_shouldReturnEmptyResponse_whenNoDevicesExist() {
+        // Arrange
+        int page = 1;
+        int size = 5;
+        Pageable pageRequest = PageRequest.of(page - 1, size);
+
+        Page<Device> devicePage = new PageImpl<>(List.of(), pageRequest, 0);
+        when(deviceRepository.findAllByStatus(DeviceStatus.NON_INSTALLED, pageRequest)).thenReturn(devicePage);
+
+        // Act
+        MyResponse response = deviceService.getAllDevicesNonInstalled(page, size);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNull(response.getData());
+        assertNull(response.getMetadata());
+
+        verify(deviceRepository, times(1)).findAllByStatus(DeviceStatus.NON_INSTALLED, pageRequest);
     }
 
     /**

@@ -137,6 +137,8 @@ public class DeviceService {
 
         }
 
+        
+
         // Update device
         public BasicResponse updateDevice(Long id, DeviceUpdateRequest request) throws BasicException {
                 List<BasicError> errors = new ArrayList<>();
@@ -564,6 +566,7 @@ public class DeviceService {
                 }
 
         }
+        
 
         // search device non installed by imei
         public MyResponse searchNonInstalledDevices(String query, int page, int size) {
