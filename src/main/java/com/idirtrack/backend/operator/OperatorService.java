@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -19,37 +18,31 @@ import com.idirtrack.backend.utils.ErrorResponse;
 import com.idirtrack.backend.utils.FieldErrorDTO;
 import com.idirtrack.backend.utils.MyResponse;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class OperatorService {
 
-        @Autowired
-        private OperatorRepository operatorRepository;
+        private final OperatorRepository operatorRepository;
 
-        /**
-         * Service: Get all operators with pagination
-         * 
-         * @param request
-         * @return
-         * @throws AlreadyExistException
-         */
-
+        // Service to get list of operators with pagination
         public MyResponse getOperatorsWithPagination(int page, int size) {
                 // Create the page request (page index is zero-based)
                 PageRequest pageRequest = PageRequest.of(page - 1, size, Sort.by("id").descending());
 
                 // Find all operators with pagination
                 Page<Operator> operatorPage = operatorRepository.findAll(pageRequest);
-                List<Operator> operators = operatorPage.getContent();
 
                 // Check if the operators list is empty
-                if (operators.isEmpty()) {
+                if (operatorPage.getContent().isEmpty()) {
                         return MyResponse.builder()
                                         .message("We don't found any operator")
                                         .status(HttpStatus.OK)
                                         .build();
                 } else {
                         // Map operators to DTOs
-                        List<OperatorDTO> operatorDTOs = operators.stream()
+                        List<OperatorDTO> operatorDTOs = operatorPage.getContent().stream()
                                         .map(operator -> OperatorDTO.builder()
                                                         .id(operator.getId())
                                                         .name(operator.getName())
@@ -74,16 +67,7 @@ public class OperatorService {
                 }
         }
 
-        /**
-         * Create a new SIM type
-         * 
-         * This method creates a new SIM type by checking if the SIM type already
-         * exists,
-         * 
-         * @param request
-         * @return
-         * @throws NotFoundException
-         */
+        // Service to create a new operator sim
         public MyResponse createOperator(OperatorRequest request) throws AlreadyExistException {
 
                 // Check if the Operator already exists
@@ -104,30 +88,18 @@ public class OperatorService {
                                 .build();
         }
 
-        /**
-         * Update a operator
-         * 
-         * @param id
-         * @param request
-         * @return
-         * @throws AlreadyExistException
-         * @throws NotFoundException
-         */
+        // Service to update a operator sim
         public MyResponse updateOperator(Long id, OperatorRequest request)
                         throws AlreadyExistException, NotFoundException {
 
                 // Check if the operator exists except her self
                 this.isOperatorAlreadyExistExceptHerSelf(id, request.getName());
-
                 // Find the operator by ID
                 Operator operator = this.findOperatorById(id);
-
                 // Set the new data
                 operator.setName(request.getName());
-
                 // Save the updated SIM type
                 operator = operatorRepository.save(operator);
-
                 // Return a response
                 return MyResponse.builder()
                                 .message("Your update the operator succussfuly")
@@ -135,9 +107,7 @@ public class OperatorService {
                                 .build();
         }
 
-        /**
-         * Get all operators
-         */
+        // Service to get all operators
         public MyResponse getAllOperators() {
                 // Find all operators
                 List<Operator> operators = operatorRepository.findAll();
@@ -165,13 +135,7 @@ public class OperatorService {
 
         }
 
-        /**
-         * Get a operator by ID
-         * 
-         * @param id
-         * @return
-         * @throws NotFoundException
-         */
+        // Service to get a operator by ID
         public MyResponse getOperatorById(Long id) throws NotFoundException {
                 // Find the operator by ID
                 Operator operator = this.findOperatorById(id);
@@ -187,13 +151,7 @@ public class OperatorService {
                                 .build();
         }
 
-        /**
-         * Delete a operator by ID
-         * 
-         * @param id
-         * @return
-         * @throws NotFoundException
-         */
+        // Service to delete a operator by ID
         public MyResponse deleteOperatorById(Long id) throws NotFoundException {
                 // Find the operator by ID
                 Operator operator = this.findOperatorById(id);
@@ -206,12 +164,7 @@ public class OperatorService {
                                 .build();
         }
 
-        /**
-         * Utils: Check if the operator already exists
-         * 
-         * @param name
-         * @throws AlreadyExistException
-         */
+        // Utils: Check if the operator already exists
         public void ifOperatorExistThrowError(String name) throws AlreadyExistException {
                 List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (operatorRepository.existsByName(name)) {
@@ -226,13 +179,7 @@ public class OperatorService {
                 }
         }
 
-        /**
-         * Utils: Check if the operator already exists except her self
-         * 
-         * @param id
-         * @param name
-         * @throws AlreadyExistException
-         */
+        // Utils: Check if the operator already exists except her self
         public void isOperatorAlreadyExistExceptHerSelf(Long id, String name) throws AlreadyExistException {
                 List<FieldErrorDTO> fieldErrors = new ArrayList<>();
                 if (operatorRepository.existsByNameAndIdNot(name, id)) {
@@ -248,13 +195,7 @@ public class OperatorService {
 
         }
 
-        /**
-         * Utils: Find a operator by ID
-         * 
-         * @param id
-         * @return
-         * @throws NotFoundException
-         */
+        // Utils: Find the operator by ID
         public Operator findOperatorById(Long id) throws NotFoundException {
                 return operatorRepository.findById(id)
                                 .orElseThrow(() -> new NotFoundException(
