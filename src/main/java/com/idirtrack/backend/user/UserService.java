@@ -34,6 +34,13 @@ public class UserService {
         // Save the user in Traccar system
         Long traccarId = traccarUserService.createUser(userDTO, bearerToken);
 
+        if (traccarId == null) {
+            throw new MyException(ErrorResponse.builder()
+                    .message("Failed to create user in Traccar: Traccar ID is null")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build());
+        }
+
         // Set the traccar id to the userDTO
         userDTO.setTraccarId(traccarId);
 
@@ -66,14 +73,31 @@ public class UserService {
     // Service to update a user in the system
     public User updateUserInSystem(UserDTO userDTO, String bearerToken) throws MyException {
 
-        // Update the user in Traccar system
-        traccarUserService.updateUser(userDTO, bearerToken);
 
-        // Encode the password
-        if (userDTO.getPassword() != null) {
-            userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-
+         // Fetch the user from the database to get the traccarId if it's not in the userDTO
+        if (userDTO.getTraccarId() == null) {
+            User existingUser = userRepository.findById(userDTO.getId())
+                    .orElseThrow(() -> new MyException(ErrorResponse.builder()
+                            .message("User not found in the system")
+                            .status(HttpStatus.NOT_FOUND)
+                            .build()));
+            userDTO.setTraccarId(existingUser.getTraccarId());
         }
+
+        if (userDTO.getTraccarId() == null) {
+            throw new MyException(ErrorResponse.builder()
+                    .message("Traccar ID cannot be null for updating a user in Traccar")
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build());
+        }
+            // Update the user in Traccar system
+            traccarUserService.updateUser(userDTO, bearerToken);
+
+            // Encode the password
+            if (userDTO.getPassword() != null) {
+                userDTO.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+            }
 
         // Save the user in the database
         User user = User.builder()

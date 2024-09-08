@@ -82,7 +82,7 @@ public class TraccarUserService {
         if (user.getRole() == UserRole.ADMIN) {
             requestBody = TracCarUser.buildAdminUser(user);
         } else if (user.getRole() == UserRole.MANAGER) {
-            requestBody = TracCarUser.buildManagerUser(user);
+            requestBody = TracCarUser.buildManagerForUpdate(user);
         } else if (user.getRole() == UserRole.CLIENT) {
             requestBody = TracCarUser.buildClientForUpdate(user);
         }
