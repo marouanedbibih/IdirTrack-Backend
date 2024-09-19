@@ -386,4 +386,26 @@ public class ClientService {
                                                         .build());
                                 });
         }
+
+        //Filter clients by category and active status
+
+        public MyResponse filterClientsByCategoryAndStatus(Long categoryId, boolean isDisabled, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Client> clients = clientRepository.findByCategoryAndStatus(categoryId, isDisabled, pageable);
+
+        Map<String, Object> metadata = Map.of(
+        "totalPages", clients.getTotalPages(),
+        "totalElements", clients.getTotalElements(),
+        "currentPage", clients.getNumber(),
+        "size", clients.getSize()
+        );
+
+        return MyResponse.builder()
+        .data(clients.getContent())
+        .metadata(metadata)
+        .message("Successfully filtered clients by category and status")
+        .status(HttpStatus.OK)
+        .build();
+        }
+
 }
